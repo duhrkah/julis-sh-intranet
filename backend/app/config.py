@@ -1,4 +1,5 @@
 """Application configuration using Pydantic Settings"""
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List, Optional
 
@@ -52,6 +53,15 @@ class Settings(BaseSettings):
     # Öffentliche Termin-Einreichung (ohne Login)
     PUBLIC_SUBMITTER_USER_ID: Optional[int] = None  # User-ID für "Gast"-Einreichungen
     PUBLIC_DEFAULT_TENANT_ID: Optional[int] = None  # Standard-Tenant für öffentliche Einreichungen
+
+    @field_validator("PUBLIC_SUBMITTER_USER_ID", "PUBLIC_DEFAULT_TENANT_ID", mode="before")
+    @classmethod
+    def empty_str_to_none_int(cls, v: object) -> Optional[int]:
+        if v is None or v == "":
+            return None
+        if isinstance(v, int):
+            return v
+        return int(v) if str(v).strip() else None
 
     model_config = SettingsConfigDict(
         env_file=".env",
