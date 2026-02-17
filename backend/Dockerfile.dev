@@ -1,0 +1,17 @@
+FROM python:3.11-slim
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl fontconfig libreoffice-writer \
+    fonts-liberation fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY ./app/templates/font /usr/share/fonts/truetype/julis
+RUN fc-cache -f -v
+COPY ./scripts ./scripts
+RUN chmod +x /app/scripts/entrypoint.dev.sh 2>/dev/null || true
+ENV PYTHONPATH=/app
+RUN mkdir -p /app/data/uploads/protokolle /app/data/uploads/dokumente
+EXPOSE 8000
+ENTRYPOINT ["/app/scripts/entrypoint.dev.sh"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

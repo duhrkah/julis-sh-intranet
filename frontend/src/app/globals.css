@@ -1,0 +1,202 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 329 100% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 53 100% 85%;
+    --secondary-foreground: 0 0% 10%;
+    --muted: 333 73% 83%;
+    --muted-foreground: 0 0% 35%;
+    --accent: 199 100% 45%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 333 30% 90%;
+    --input: 333 30% 90%;
+    --ring: 329 100% 45%;
+    --radius: 0.75rem;
+
+    --julis-magenta: 329 100% 45%;
+    --julis-yellow: 56 100% 50%;
+    --julis-cyan: 199 100% 45%;
+    --julis-soft-magenta: 333 73% 83%;
+    --julis-soft-yellow: 53 100% 85%;
+    --julis-soft-cyan: 202 85% 80%;
+    --julis-soft-purple: 251 33% 70%;
+    --julis-soft-orange: 22 67% 76%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 0 0% 10%;
+    --sidebar-border: 333 30% 90%;
+    --sidebar-accent: 329 100% 45%;
+    --sidebar-accent-foreground: 0 0% 100%;
+  }
+
+  .dark {
+    --background: 0 0% 8%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 12%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 12%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 329 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 56 70% 25%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 329 30% 20%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 199 100% 40%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 35%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 329 20% 20%;
+    --input: 329 20% 20%;
+    --ring: 329 100% 50%;
+
+    --julis-magenta: 329 100% 45%;
+    --julis-yellow: 56 100% 50%;
+    --julis-cyan: 199 100% 45%;
+    --julis-soft-magenta: 333 73% 83%;
+    --julis-soft-yellow: 53 100% 85%;
+    --julis-soft-cyan: 202 85% 80%;
+    --julis-soft-purple: 251 33% 70%;
+    --julis-soft-orange: 22 67% 76%;
+
+    --sidebar-background: 0 0% 6%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-border: 329 20% 20%;
+    --sidebar-accent: 329 100% 50%;
+    --sidebar-accent-foreground: 0 0% 100%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* FullCalendar (Kalenderansicht) */
+.fullcalendar-wrapper {
+  background: hsl(var(--card));
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--border));
+}
+.fullcalendar-wrapper .fc {
+  font-family: inherit;
+}
+.fullcalendar-wrapper .fc .fc-toolbar {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.fullcalendar-wrapper .fc .fc-toolbar-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+@media (min-width: 640px) {
+  .fullcalendar-wrapper .fc .fc-toolbar-title {
+    font-size: 1.25rem;
+  }
+}
+.fullcalendar-wrapper .fc .fc-button {
+  background-color: hsl(var(--primary));
+  border-color: hsl(var(--primary));
+  color: white;
+  text-transform: none;
+  font-weight: 500;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+.fullcalendar-wrapper .fc .fc-button:hover:not(:disabled) {
+  background-color: hsl(var(--primary) / 0.9);
+  border-color: hsl(var(--primary) / 0.9);
+}
+.fullcalendar-wrapper .fc .fc-button-active {
+  background-color: hsl(var(--primary) / 0.8) !important;
+}
+.fullcalendar-wrapper .fc-theme-standard td,
+.fullcalendar-wrapper .fc-theme-standard th,
+.fullcalendar-wrapper .fc-theme-standard .fc-scrollgrid {
+  border-color: hsl(var(--border));
+}
+.fullcalendar-wrapper .fc .fc-col-header-cell {
+  background-color: hsl(var(--muted));
+  padding: 0.5rem;
+}
+.fullcalendar-wrapper .fc .fc-col-header-cell-cushion {
+  color: hsl(var(--muted-foreground));
+  font-weight: 500;
+  font-size: 0.75rem;
+}
+.fullcalendar-wrapper .fc .fc-daygrid-day-number {
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+}
+.fullcalendar-wrapper .fc-day-today {
+  background-color: hsl(var(--primary) / 0.05) !important;
+}
+.fullcalendar-wrapper .fc-day-today .fc-daygrid-day-number {
+  background-color: hsl(var(--primary));
+  color: white;
+  border-radius: 9999px;
+  width: 1.75rem;
+  height: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fullcalendar-wrapper .fc-event {
+  cursor: pointer;
+  border-radius: 0.25rem;
+  padding: 2px 4px;
+  font-size: 0.75rem;
+}
+.fullcalendar-wrapper .fc-event:hover {
+  opacity: 0.9;
+}
+.fullcalendar-wrapper .fc-daygrid-event {
+  white-space: normal;
+}
+.fullcalendar-wrapper .fc-list {
+  border-color: hsl(var(--border));
+}
+.fullcalendar-wrapper .fc-list-day-cushion {
+  background-color: hsl(var(--muted)) !important;
+}
+.fullcalendar-wrapper .fc-list-day-text,
+.fullcalendar-wrapper .fc-list-day-side-text {
+  color: hsl(var(--foreground));
+}
+.fullcalendar-wrapper .fc-list-event:hover td {
+  background-color: hsl(var(--muted));
+}
+.fullcalendar-wrapper .fc-daygrid-more-link {
+  color: hsl(var(--primary));
+  font-weight: 500;
+}

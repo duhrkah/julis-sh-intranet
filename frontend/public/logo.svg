@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Signet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 518.08 514.62">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #ffed00;
+      }
+
+      .cls-2 {
+        fill: #e5007d;
+      }
+    </style>
+  </defs>
+  <rect class="cls-1" x="102.99" y="98.98" width="316.44" height="316.44" rx="30.3" ry="30.3" transform="translate(-57.67 76.37) rotate(-15)"/>
+  <rect class="cls-2" x="69.92" y="109.58" width="316.44" height="316.44" rx="30.3" ry="30.3"/>
+  <g>
+    <polygon class="cls-1" points="253.15 179.17 318.72 179.17 281.67 318.11 216.1 318.11 253.15 179.17"/>
+    <polygon class="cls-1" points="156.45 251.79 222.4 251.79 184.98 390.72 137.56 321.25 156.45 251.79"/>
+  </g>
+</svg>
