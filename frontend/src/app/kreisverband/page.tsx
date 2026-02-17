@@ -8,7 +8,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Building2, ChevronRight, Users } from 'lucide-react';
+import { Building2, ChevronRight, Users, Settings } from 'lucide-react';
 
 export default function KreisverbandPage() {
   const { hasMinRole } = useAuth();
@@ -51,12 +51,22 @@ export default function KreisverbandPage() {
             Übersicht aller Kreisverbände mit Kürzel und Status. Klicke auf einen Eintrag für Details, Vorstand und Protokolle.
           </p>
         </div>
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/kreisverband/uebersicht" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Vorstandsübersicht Landesverband
-          </Link>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {hasMinRole('admin') && (
+            <Button asChild>
+              <Link href="/verwaltung/kreise" className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Kreise verwalten
+              </Link>
+            </Button>
+          )}
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/kreisverband/uebersicht" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Vorstandsübersicht Landesverband
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

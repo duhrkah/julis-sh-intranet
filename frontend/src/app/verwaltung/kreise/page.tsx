@@ -204,7 +204,7 @@ export default function VerwaltungKreisePage() {
 
       <h1 className="text-2xl font-semibold">Kreise verwalten</h1>
       <p className="mt-1 text-muted-foreground">
-        Kreisverbände anlegen, bearbeiten oder deaktivieren (nur Administrator).
+        Neue Kreisverbände anlegen, bestehende bearbeiten oder deaktivieren. Deaktivierte Kreise erscheinen in Auswahlen nicht mehr (nur Administrator).
       </p>
 
       {error && (
