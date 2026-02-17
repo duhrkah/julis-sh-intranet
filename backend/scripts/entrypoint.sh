@@ -1,15 +1,33 @@
 #!/bin/bash
 set -e
 
-echo "Creating tables if not present (so migrations have base schema)..."
+echo "Creating tables if not present..."
 python -c "
 from app.database import engine, Base
 from app.models import *
 Base.metadata.create_all(bind=engine)
 "
 
-echo "Running database migrations..."
-alembic upgrade head
+echo "Applying migrations or stamping fresh DB..."
+python -c "
+import subprocess
+import sys
+from sqlalchemy import text
+from app.database import engine
+
+with engine.connect() as conn:
+    try:
+        r = conn.execute(text(\"SELECT COUNT(*) FROM alembic_version\"))
+        count = r.scalar()
+    except Exception:
+        count = 0
+    if count == 0:
+        print('Fresh DB: stamping head (no migrations run).')
+        subprocess.check_call([sys.executable, '-m', 'alembic', 'stamp', 'head'])
+    else:
+        print('Existing DB: running migrations.')
+        subprocess.check_call([sys.executable, '-m', 'alembic', 'upgrade', 'head'])
+"
 
 echo "Creating initial admin user if needed..."
 python -c "
