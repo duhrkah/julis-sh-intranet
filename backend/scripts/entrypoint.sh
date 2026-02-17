@@ -1,6 +1,13 @@
 #!/bin/bash
 set -e
 
+echo "Creating tables if not present (so migrations have base schema)..."
+python -c "
+from app.database import engine, Base
+from app.models import *
+Base.metadata.create_all(bind=engine)
+"
+
 echo "Running database migrations..."
 alembic upgrade head
 
@@ -10,8 +17,6 @@ import os, secrets
 from app.database import SessionLocal, engine, Base
 from app.models import *
 from app.core.security import get_password_hash
-
-Base.metadata.create_all(bind=engine)
 
 db = SessionLocal()
 try:
