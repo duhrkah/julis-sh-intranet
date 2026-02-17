@@ -93,9 +93,9 @@ async def landesverband_vorstand_uebersicht(
     rolle: str = Query(..., description="vorsitz | schatzmeister | organisation | programmatik | presse"),
     mit_beisitzern: bool = Query(True, description="Bei Organisation/Programmatik/Presse: Beisitzer einbeziehen"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("vorstand")),
+    current_user: User = Depends(require_role("mitarbeiter")),
 ):
-    """Vorstandsübersicht für den gesamten Landesverband: alle KVs mit Personen der gewählten Rolle (optional mit/ohne Beisitzer)."""
+    """Vorstandsübersicht für den gesamten Landesverband. Mitarbeiter+ can view."""
     rollen_liste = _rollen_fuer_uebersicht(rolle.lower(), mit_beisitzern)
     if not rollen_liste:
         raise HTTPException(status_code=400, detail="Ungültige rolle. Erlaubt: vorsitz, schatzmeister, organisation, programmatik, presse")
@@ -295,9 +295,9 @@ async def update_vorstandsmitglied(
 async def delete_vorstandsmitglied(
     mitglied_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("vorstand")),
+    current_user: User = Depends(require_role("admin")),
 ):
-    """Delete a Vorstandsmitglied. Vorstand+ can delete."""
+    """Vorstandsmitglied löschen. Nur Admin kann löschen."""
     mitglied = db.query(KVVorstandsmitglied).filter(KVVorstandsmitglied.id == mitglied_id).first()
     if not mitglied:
         raise HTTPException(status_code=404, detail="Vorstandsmitglied not found")
@@ -379,9 +379,9 @@ async def create_protokoll(
 async def delete_protokoll(
     protokoll_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("mitarbeiter")),
+    current_user: User = Depends(require_role("admin")),
 ):
-    """Delete a Protokoll and its file. Mitarbeiter+ can delete."""
+    """Protokoll und Datei löschen. Nur Admin kann löschen."""
     protokoll = db.query(KVProtokoll).filter(KVProtokoll.id == protokoll_id).first()
     if not protokoll:
         raise HTTPException(status_code=404, detail="Protokoll not found")

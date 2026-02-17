@@ -107,6 +107,13 @@ async def get_meeting(
     return meeting
 
 
+# Felder, die Mitarbeiter/Vorstand beim Update setzen dürfen (nur Protokoll schreiben)
+MEETING_UPDATE_PROTOCOL_ONLY_FIELDS = frozenset({
+    "protokoll_top_texte", "teilnehmer", "teilnehmer_sonstige",
+    "sitzungsleitung", "protokollfuehrer", "teilnehmer_eingeladene_auswahl", "beschluesse",
+})
+
+
 @router.put("/{meeting_id}", response_model=MeetingResponse)
 async def update_meeting(
     meeting_id: int,
@@ -114,11 +121,13 @@ async def update_meeting(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("mitarbeiter")),
 ):
-    """Update a meeting (z. B. Protokoll schreiben). Mitarbeiter+ can update."""
+    """Update a meeting. Leitung/Admin: alle Felder. Mitarbeiter/Vorstand: nur Protokollfelder."""
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
     update_data = data.model_dump(exclude_unset=True)
+    if current_user.role in ("mitarbeiter", "vorstand"):
+        update_data = {k: v for k, v in update_data.items() if k in MEETING_UPDATE_PROTOCOL_ONLY_FIELDS}
     for field, value in update_data.items():
         setattr(meeting, field, value)
     db.commit()
@@ -130,9 +139,9 @@ async def update_meeting(
 async def delete_meeting(
     meeting_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("leitung")),
+    current_user: User = Depends(require_role("admin")),
 ):
-    """Delete a meeting. Leitung+ can delete."""
+    """Delete a meeting. Nur Admin kann löschen."""
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")

@@ -45,6 +45,7 @@ interface AuthContextType {
   isVorstand: boolean;
   isMitarbeiter: boolean;
   hasMinRole: (role: Role) => boolean;
+  canAccessMemberChanges: () => boolean;
   isAuthenticated: boolean;
   displayRole: string;
 }
@@ -117,6 +118,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [user]
   );
 
+  /** Mitarbeiter, Leitung und Admin – nicht Vorstand (Vorstand darf Mitgliederänderungen nicht aufrufen). */
+  const canAccessMemberChanges = useCallback((): boolean => {
+    if (!user) return false;
+    const r = user.role as Role;
+    return r === 'mitarbeiter' || r === 'leitung' || r === 'admin';
+  }, [user]);
+
   const value: AuthContextType = {
     user,
     loading,
@@ -129,6 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isVorstand: hasMinRole('vorstand'),
     isMitarbeiter: hasMinRole('mitarbeiter'),
     hasMinRole,
+    canAccessMemberChanges,
     isAuthenticated: !!user,
     displayRole: user ? ROLE_DISPLAY[user.role as Role] : '',
   };

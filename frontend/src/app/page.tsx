@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function HomePage() {
-  const { user, loading, isAuthenticated, hasMinRole } = useAuth();
+  const { user, loading, isAuthenticated, hasMinRole, canAccessMemberChanges } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -53,7 +53,7 @@ export default function HomePage() {
               </CardContent>
             </Card>
           )}
-          {hasMinRole('mitarbeiter') && (
+          {canAccessMemberChanges() && (
             <Card className="border-sidebar-border bg-card">
               <CardHeader>
                 <CardTitle className="text-lg">Mitgliederänderungen</CardTitle>

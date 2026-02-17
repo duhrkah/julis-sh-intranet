@@ -293,9 +293,9 @@ async def delete_document(
     document_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("leitung")),
+    current_user: User = Depends(require_role("admin")),
 ):
-    """Delete a document and its file. Leitung+ can delete."""
+    """Dokument und Datei löschen. Nur Admin kann löschen."""
     doc = db.query(Document).filter(Document.id == document_id).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -534,9 +534,9 @@ async def delete_stelle(
     stelle_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("leitung")),
+    current_user: User = Depends(require_role("admin")),
 ):
-    """Stelle löschen. Leitung+."""
+    """Stelle löschen. Nur Admin."""
     stelle = (
         db.query(DocumentAenderung)
         .filter(
@@ -642,9 +642,9 @@ async def delete_aenderungsantrag(
     aenderungsantrag_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("leitung")),
+    current_user: User = Depends(require_role("admin")),
 ):
-    """Delete an aenderungsantrag. Leitung+ can delete."""
+    """Änderungsantrag löschen. Nur Admin kann löschen."""
     aenderungsantrag = db.query(DocumentAenderungsantrag).filter(DocumentAenderungsantrag.id == aenderungsantrag_id).first()
     if not aenderungsantrag:
         raise HTTPException(status_code=404, detail="Aenderungsantrag not found")

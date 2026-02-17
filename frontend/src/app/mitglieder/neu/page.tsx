@@ -21,7 +21,7 @@ const STEPS = ['Szenario', 'Persönliche Daten', 'Kreisverband', 'Bemerkung', 'A
 
 export default function NeueMitgliederänderungPage() {
   const router = useRouter();
-  const { hasMinRole } = useAuth();
+  const { canAccessMemberChanges } = useAuth();
   const [step, setStep] = useState(0);
   const [kvList, setKvList] = useState<Kreisverband[]>([]);
   const [loading, setLoading] = useState(false);
@@ -48,13 +48,13 @@ export default function NeueMitgliederänderungPage() {
   });
 
   useEffect(() => {
-    if (!hasMinRole('mitarbeiter')) return;
+    if (!canAccessMemberChanges()) return;
     getKreisverbande({ ist_aktiv: true })
       .then(setKvList)
       .catch(() => setKvList([]));
-  }, [hasMinRole]);
+  }, [canAccessMemberChanges]);
 
-  if (!hasMinRole('mitarbeiter')) {
+  if (!canAccessMemberChanges()) {
     router.replace('/mitglieder');
     return null;
   }

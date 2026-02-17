@@ -33,7 +33,7 @@ export default function KreisverbandDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = Number(params.id);
-  const { hasMinRole } = useAuth();
+  const { hasMinRole, isAdmin } = useAuth();
 
   const [kv, setKv] = useState<Kreisverband | null>(null);
   const [vorstand, setVorstand] = useState<Vorstandsmitglied[]>([]);
@@ -54,7 +54,9 @@ export default function KreisverbandDetailPage() {
   const [protokollDatei, setProtokollDatei] = useState<File | null>(null);
 
   const canEditVorstand = hasMinRole('vorstand');
+  const canDeleteVorstand = isAdmin;
   const canAddProtokoll = hasMinRole('mitarbeiter');
+  const canDeleteProtokoll = isAdmin;
 
   useEffect(() => {
     if (!hasMinRole('mitarbeiter') || !id) return;
@@ -293,7 +295,7 @@ export default function KreisverbandDetailPage() {
                     )}
                     <Badge variant="outline" className="ml-2 text-xs">{m.rolle}</Badge>
                   </div>
-                  {canEditVorstand && (
+                  {canDeleteVorstand && (
                     <Button
                       type="button"
                       variant="ghost"
@@ -404,7 +406,7 @@ export default function KreisverbandDetailPage() {
                           PDF
                         </a>
                       )}
-                      {canAddProtokoll && (
+                      {canDeleteProtokoll && (
                         <Button
                           type="button"
                           variant="ghost"

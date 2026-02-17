@@ -33,7 +33,7 @@ const adminItems: { href: string; label: string; icon: React.ComponentType<{ cla
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { hasMinRole } = useAuth();
+  const { hasMinRole, canAccessMemberChanges } = useAuth();
 
   return (
     <aside className="flex h-full w-56 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
@@ -44,7 +44,8 @@ export function Sidebar() {
       </div>
       <nav className="flex-1 space-y-0.5 p-3">
         {navItems.map((item) => {
-          if (!hasMinRole(item.minRole)) return null;
+          const allowed = item.href === '/mitglieder' ? canAccessMemberChanges() : hasMinRole(item.minRole);
+          if (!allowed) return null;
           const Icon = item.icon;
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
           return (

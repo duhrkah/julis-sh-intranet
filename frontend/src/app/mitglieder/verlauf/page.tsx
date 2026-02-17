@@ -13,7 +13,7 @@ import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 
 export default function VerlaufPage() {
-  const { hasMinRole } = useAuth();
+  const { canAccessMemberChanges, hasMinRole } = useAuth();
   const [list, setList] = useState<MemberChange[]>([]);
   const [loading, setLoading] = useState(true);
   const [sendingId, setSendingId] = useState<number | null>(null);
@@ -24,11 +24,11 @@ export default function VerlaufPage() {
   const [resendLoading, setResendLoading] = useState(false);
 
   useEffect(() => {
-    if (!hasMinRole('mitarbeiter')) return;
+    if (!canAccessMemberChanges()) return;
     getMemberChanges({ limit: 100 })
       .then(setList)
       .finally(() => setLoading(false));
-  }, [hasMinRole]);
+  }, [canAccessMemberChanges]);
 
   const handleSend = async (id: number) => {
     setSendingId(id);
@@ -59,7 +59,7 @@ export default function VerlaufPage() {
     }
   };
 
-  if (!hasMinRole('mitarbeiter')) return null;
+  if (!canAccessMemberChanges()) return null;
 
   return (
     <div className="p-6">

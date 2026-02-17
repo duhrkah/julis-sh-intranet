@@ -35,7 +35,7 @@ export default function KreisverbandUebersichtPage() {
   const showBeisitzerToggle = ROLLEN_MIT_BEISITZERN.includes(rolle);
 
   useEffect(() => {
-    if (!hasMinRole('vorstand')) return;
+    if (!hasMinRole('mitarbeiter')) return;
     setLoading(true);
     setError(null);
     getLandesverbandVorstandUebersicht({ rolle, mit_beisitzern: showBeisitzerToggle ? mitBeisitzern : true })
@@ -53,7 +53,7 @@ export default function KreisverbandUebersichtPage() {
     ? `mailto:info@julis-sh.de?bcc=${bccEmails.map((e) => encodeURIComponent(e)).join(',')}`
     : null;
 
-  if (!hasMinRole('vorstand')) return null;
+  if (!hasMinRole('mitarbeiter')) return null;
 
   return (
     <div className="p-6">

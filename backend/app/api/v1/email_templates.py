@@ -152,7 +152,7 @@ async def update_email_template(
 async def delete_email_template(
     template_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("leitung")),
+    current_user: User = Depends(require_role("admin")),
 ):
     """Delete an email template. Leitung+ role required."""
     template = db.query(EmailTemplate).filter(EmailTemplate.id == template_id).first()
@@ -250,7 +250,7 @@ async def upload_template_attachment(
 async def delete_template_attachment(
     template_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("leitung")),
+    current_user: User = Depends(require_role("admin")),
 ):
     """Anhang dieses Templates entfernen. Leitung+."""
     template = db.query(EmailTemplate).filter(EmailTemplate.id == template_id).first()

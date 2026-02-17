@@ -46,3 +46,18 @@ def require_leitung():
 
 def require_vorstand():
     return require_role("vorstand")
+
+
+def require_member_changes_access():
+    """Nur Mitarbeiter, Leitung und Admin – Vorstand darf Mitgliederänderungen nicht aufrufen."""
+    from app.api.deps import get_current_user
+
+    async def checker(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.role not in ("mitarbeiter", "leitung", "admin"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Zugriff auf Mitgliederänderungen nur für Mitarbeiter, Leitung oder Administrator",
+            )
+        return current_user
+
+    return checker

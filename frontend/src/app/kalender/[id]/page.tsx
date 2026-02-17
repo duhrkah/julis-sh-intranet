@@ -39,7 +39,7 @@ export default function KalenderEventPage() {
   const params = useParams();
   const router = useRouter();
   const id = Number(params.id);
-  const { hasMinRole, user } = useAuth();
+  const { hasMinRole, user, isAdmin } = useAuth();
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -81,7 +81,7 @@ export default function KalenderEventPage() {
   }, [id, hasMinRole]);
 
   const canEdit = event && (event.submitter_id === user?.id || hasMinRole('vorstand'));
-  const canDelete = event && (event.submitter_id === user?.id || hasMinRole('vorstand'));
+  const canDelete = event && (event.submitter_id === user?.id || isAdmin);
   const canApproveReject = event && event.status === 'pending' && hasMinRole('vorstand');
 
   const handleSave = async () => {

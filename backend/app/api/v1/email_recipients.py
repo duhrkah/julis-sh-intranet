@@ -84,9 +84,9 @@ async def update_email_recipient(
 async def delete_email_recipient(
     recipient_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("leitung")),
+    current_user: User = Depends(require_role("admin")),
 ):
-    """Delete an email recipient. Leitung+ can delete."""
+    """E-Mail-Empfänger löschen. Nur Admin kann löschen."""
     rec = db.query(EmailRecipient).filter(EmailRecipient.id == recipient_id).first()
     if not rec:
         raise HTTPException(status_code=404, detail="Email recipient not found")

@@ -43,7 +43,7 @@ export default function DocumentDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = Number(params.id);
-  const { hasMinRole } = useAuth();
+  const { hasMinRole, isAdmin } = useAuth();
   const docTextRef = useRef<HTMLTextAreaElement>(null);
 
   const [doc, setDoc] = useState<Document | null>(null);
@@ -523,7 +523,7 @@ export default function DocumentDetailPage() {
             </div>
           </div>
         </div>
-        {hasMinRole('leitung') && (
+        {isAdmin && (
           <Button variant="destructive" size="sm" onClick={handleDeleteDocument} disabled={deleting}>
             {deleting ? 'Löschen …' : 'Dokument löschen'}
           </Button>
@@ -733,15 +733,17 @@ export default function DocumentDetailPage() {
                               <option value="angenommen">Angenommen</option>
                               <option value="abgelehnt">Abgelehnt</option>
                             </select>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive"
-                              onClick={() => handleDeleteAmendment(a.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {isAdmin && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive"
+                                onClick={() => handleDeleteAmendment(a.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                           </>
                         )}
                       </div>
@@ -755,7 +757,7 @@ export default function DocumentDetailPage() {
                             <li key={s.id} className="rounded bg-muted/40 p-3 text-sm">
                               <div className="flex flex-wrap items-start justify-between gap-2">
                                 {s.bezug && <span className="font-medium">{s.bezug}</span>}
-                                {canEdit && (
+                                {isAdmin && (
                                   <Button
                                     type="button"
                                     variant="ghost"

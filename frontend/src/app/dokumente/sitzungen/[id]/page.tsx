@@ -87,6 +87,8 @@ function TagesordnungNode({
   onAddChild,
   onRemove,
   canRemove,
+  canAddChild = true,
+  readOnly = false,
   depth,
 }: {
   node: Tagesordnungspunkt;
@@ -96,6 +98,8 @@ function TagesordnungNode({
   onAddChild: (path: number[]) => void;
   onRemove: (path: number[]) => void;
   canRemove: boolean;
+  canAddChild?: boolean;
+  readOnly?: boolean;
   depth: number;
 }) {
   const children = node.unterpunkte ?? [];
@@ -108,6 +112,7 @@ function TagesordnungNode({
           onChange={(e) => onTitelChange(path, e.target.value)}
           placeholder={depth === 0 ? 'Titel Tagesordnungspunkt' : 'Unterpunkt'}
           className="flex-1 text-sm"
+          readOnly={readOnly}
         />
         <Button type="button" variant="ghost" size="icon" onClick={() => onRemove(path)} disabled={!canRemove} className="shrink-0 text-destructive">
           <Trash2 className="h-3 w-3" />
@@ -123,13 +128,17 @@ function TagesordnungNode({
             onTitelChange={onTitelChange}
             onAddChild={onAddChild}
             onRemove={onRemove}
-            canRemove
+            canRemove={canRemove}
+            canAddChild={canAddChild}
+            readOnly={readOnly}
             depth={depth + 1}
           />
         ))}
-        <Button type="button" variant="ghost" size="sm" className="mt-1 text-muted-foreground" onClick={() => onAddChild(path)}>
-          <Plus className="mr-1 h-3 w-3" /> Unterpunkt
-        </Button>
+        {canAddChild && (
+          <Button type="button" variant="ghost" size="sm" className="mt-1 text-muted-foreground" onClick={() => onAddChild(path)}>
+            <Plus className="mr-1 h-3 w-3" /> Unterpunkt
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -139,7 +148,10 @@ export default function SitzungDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = Number(params.id);
-  const { hasMinRole } = useAuth();
+  const { hasMinRole, isAdmin } = useAuth();
+  const canEditMeeting = hasMinRole('leitung');
+  const protocolOnlyMode = !canEditMeeting; // Mitarbeiter & Vorstand: nur Protokoll, keine Rahmendaten/Einladung
+  const canDeleteMeeting = isAdmin;
   const [meeting, setMeeting] = useState<Meeting | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState<'einladung' | 'protokoll' | null>(null);
@@ -466,9 +478,11 @@ export default function SitzungDetailPage() {
               </p>
             </div>
           </div>
-          <Button variant="destructive" size="sm" onClick={handleDeleteMeeting} disabled={deleting}>
-            {deleting ? 'Löschen …' : 'Sitzung löschen'}
-          </Button>
+          {canDeleteMeeting && (
+            <Button variant="destructive" size="sm" onClick={handleDeleteMeeting} disabled={deleting}>
+              {deleting ? 'Löschen …' : 'Sitzung löschen'}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -506,22 +520,24 @@ export default function SitzungDetailPage() {
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   Termin & Ort
                 </CardTitle>
-                <CardDescription className="text-muted-foreground">Datum, Uhrzeit, Ort und optional kurzer Titel für die Vorlagen</CardDescription>
+                <CardDescription className="text-muted-foreground">
+                  {protocolOnlyMode ? 'Nur Ansicht – Bearbeitung nur für Leitung.' : 'Datum, Uhrzeit, Ort und optional kurzer Titel für die Vorlagen'}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium">Datum</label>
-                    <Input type="date" value={editDatum} onChange={(e) => setEditDatum(e.target.value)} />
+                    <Input type="date" value={editDatum} onChange={(e) => setEditDatum(e.target.value)} disabled={protocolOnlyMode} />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium">Uhrzeit</label>
-                    <Input type="time" value={editUhrzeit} onChange={(e) => setEditUhrzeit(e.target.value)} />
+                    <Input type="time" value={editUhrzeit} onChange={(e) => setEditUhrzeit(e.target.value)} disabled={protocolOnlyMode} />
                   </div>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium">Ort</label>
-                  <Input value={editOrt} onChange={(e) => setEditOrt(e.target.value)} placeholder="Ort" />
+                  <Input value={editOrt} onChange={(e) => setEditOrt(e.target.value)} placeholder="Ort" disabled={protocolOnlyMode} />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium">Kurzer Titel (optional)</label>
@@ -529,11 +545,14 @@ export default function SitzungDetailPage() {
                     value={editTitelKurz}
                     onChange={(e) => setEditTitelKurz(e.target.value)}
                     placeholder="z. B. für Kopfzeilen in Word"
+                    disabled={protocolOnlyMode}
                   />
                 </div>
-                <Button onClick={handleSaveRahmendaten} disabled={savingRahmen}>
-                  {savingRahmen ? 'Speichern …' : 'Speichern'}
-                </Button>
+                {!protocolOnlyMode && (
+                  <Button onClick={handleSaveRahmendaten} disabled={savingRahmen}>
+                    {savingRahmen ? 'Speichern …' : 'Speichern'}
+                  </Button>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -545,7 +564,9 @@ export default function SitzungDetailPage() {
                   <Mail className="h-4 w-4 text-muted-foreground" />
                   Einladungsempfänger
                 </CardTitle>
-                <CardDescription className="text-muted-foreground">Variante und Empfänger für die Word-Einladung</CardDescription>
+                <CardDescription className="text-muted-foreground">
+                  {protocolOnlyMode ? 'Nur Ansicht – Bearbeitung nur für Leitung.' : 'Variante und Empfänger für die Word-Einladung'}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-1.5">
@@ -554,6 +575,7 @@ export default function SitzungDetailPage() {
                     className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm"
                     value={editEinladungVariante}
                     onChange={(e) => setEditEinladungVariante(e.target.value as EinladungVariante)}
+                    disabled={protocolOnlyMode}
                   >
                     <option value="landesvorstand">Landesvorstand</option>
                     <option value="erweiterter_landesvorstand">Erweiterter Landesvorstand</option>
@@ -588,19 +610,24 @@ export default function SitzungDetailPage() {
                       value={editEinladungEmpfaengerFreitext}
                       onChange={(e) => setEditEinladungEmpfaengerFreitext(e.target.value)}
                       placeholder="z. B. Eingeladen: … / nachrichtlich: …"
+                      disabled={protocolOnlyMode}
                     />
                   </div>
                 )}
-                <Button onClick={handleSaveEinladung} disabled={savingEinladung}>
-                  {savingEinladung ? 'Speichern …' : 'Speichern'}
-                </Button>
+                {!protocolOnlyMode && (
+                  <Button onClick={handleSaveEinladung} disabled={savingEinladung}>
+                    {savingEinladung ? 'Speichern …' : 'Speichern'}
+                  </Button>
+                )}
               </CardContent>
             </Card>
 
             <Card className="border-border/80 shadow-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-semibold">Tagesordnungspunkte</CardTitle>
-                <CardDescription className="text-muted-foreground">TOPs mit optionalen Unterpunkten – für Einladung und Protokoll</CardDescription>
+                <CardDescription className="text-muted-foreground">
+                  {protocolOnlyMode ? 'Nur Ansicht – Bearbeitung nur für Leitung.' : 'TOPs mit optionalen Unterpunkten – für Einladung und Protokoll'}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {editTagesordnung.map((top, index) => (
@@ -612,14 +639,18 @@ export default function SitzungDetailPage() {
                       onTitelChange={handleTitelChange}
                       onAddChild={handleAddChild}
                       onRemove={handleRemove}
-                      canRemove={editTagesordnung.length > 1}
+                      canRemove={!protocolOnlyMode && editTagesordnung.length > 1}
+                      canAddChild={!protocolOnlyMode}
+                      readOnly={protocolOnlyMode}
                       depth={0}
                     />
                   </div>
                 ))}
-                <Button type="button" variant="outline" size="sm" onClick={addEditTop}>
-                  <Plus className="mr-1.5 h-4 w-4" /> TOP hinzufügen
-                </Button>
+                {!protocolOnlyMode && (
+                  <Button type="button" variant="outline" size="sm" onClick={addEditTop}>
+                    <Plus className="mr-1.5 h-4 w-4" /> TOP hinzufügen
+                  </Button>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -751,7 +782,7 @@ export default function SitzungDetailPage() {
                     Einladung
                   </CardTitle>
                   <CardDescription className="text-muted-foreground">
-                    {meeting.einladung_pfad ? 'Bereit zum Download' : 'Noch nicht erstellt'}
+                    {meeting.einladung_pfad ? 'Bereit zum Download' : protocolOnlyMode ? 'Noch nicht erstellt (nur Leitung kann erzeugen)' : 'Noch nicht erstellt'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -779,18 +810,20 @@ export default function SitzungDetailPage() {
                           {pdfDownloading === 'einladung' ? 'PDF wird erzeugt …' : 'PDF'}
                         </Button>
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleGenerateInvitation}
-                        disabled={generating === 'einladung'}
-                        className="text-muted-foreground"
-                      >
-                        <RefreshCw className="mr-2 h-4 w-4" />
-                        {generating === 'einladung' ? 'Wird erzeugt …' : 'Einladung neu generieren'}
-                      </Button>
+                      {canEditMeeting && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleGenerateInvitation}
+                          disabled={generating === 'einladung'}
+                          className="text-muted-foreground"
+                        >
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                          {generating === 'einladung' ? 'Wird erzeugt …' : 'Einladung neu generieren'}
+                        </Button>
+                      )}
                     </div>
-                  ) : (
+                  ) : !protocolOnlyMode ? (
                     <>
                       <p className="text-sm text-muted-foreground">
                         Erzeugt die Datei aus den Rahmendaten und der Vorlage <code className="rounded bg-muted px-1 text-xs">einladung.docx</code>.
@@ -812,7 +845,7 @@ export default function SitzungDetailPage() {
                         )}
                       </Button>
                     </>
-                  )}
+                  ) : null}
                 </CardContent>
               </Card>
 

@@ -8,12 +8,12 @@ import { Users, Mail, UserPlus, History } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function MitgliederPage() {
-  const { hasMinRole } = useAuth();
+  const { canAccessMemberChanges, user } = useAuth();
   const router = useRouter();
 
-  if (!hasMinRole('mitarbeiter')) return null;
+  if (!canAccessMemberChanges()) return null;
 
-  const canEdit = hasMinRole('leitung');
+  const canEdit = canAccessMemberChanges() && (user?.role === 'leitung' || user?.role === 'admin');
 
   return (
     <div className="p-6">
@@ -23,24 +23,22 @@ export default function MitgliederPage() {
       </p>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {canEdit && (
-          <Card className="border-sidebar-border">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <UserPlus className="h-5 w-5" />
-                Neue Änderung
-              </CardTitle>
-              <CardDescription>
-                Wizard: Szenario wählen, Daten erfassen, sofort versenden oder als Entwurf speichern.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild className="w-full">
-                <Link href="/mitglieder/neu">Änderung erfassen</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+        <Card className="border-sidebar-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <UserPlus className="h-5 w-5" />
+              Neue Änderung
+            </CardTitle>
+            <CardDescription>
+              Wizard: Szenario wählen, Daten erfassen, sofort versenden oder als Entwurf speichern.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="w-full">
+              <Link href="/mitglieder/neu">Änderung erfassen</Link>
+            </Button>
+          </CardContent>
+        </Card>
 
         <Card className="border-sidebar-border">
           <CardHeader>

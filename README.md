@@ -71,6 +71,28 @@ intranet/
 └── README.md
 ```
 
+ ---
+  Wichtige Hinweise
+
+  Thema: Backups
+  Detail: Das Volume prod-data enthält die SQLite-DB + Uploads. Regelmaeßig sichern:
+  docker compose exec backend cp /app/data/intranet.db /app/data/intranet.db.bak oder Host-seitig den Volume-Pfad sichern
+  ────────────────────────────────────────
+  Thema: Updates
+  Detail: git pull && docker compose up -d --build - Alembic-Migrations laufen automatisch beim Start
+  ────────────────────────────────────────
+  Thema: Logs
+  Detail: In Produktion jetzt JSON-Format (strukturiert), einsehbar via docker compose logs backend
+  ────────────────────────────────────────
+  Thema: Monitoring
+  Detail: /health Endpoint prüft HTTP + DB-Verbindung - ideal fuer Uptime-Monitoring (z.B. UptimeRobot)
+  ────────────────────────────────────────
+  Thema: SSL-Erneuerung
+  Detail: Laeuft automatisch via Cron im Nginx-Container
+  ────────────────────────────────────────
+  Thema: Neustart
+  Detail: restart: unless-stopped - Container starten nach Server-Reboot automatisch
+
 ## Lizenz / Hinweis
 
 Internes Projekt – Nutzung gemäß Vereinsvorgaben.

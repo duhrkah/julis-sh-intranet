@@ -17,7 +17,7 @@ def _format_date_for_template(value: Optional[str]) -> str:
         return value
 
 from app.api.deps import get_db
-from app.core.rbac import require_role
+from app.core.rbac import require_role, require_member_changes_access
 from app.models.member_change import MemberChange
 from app.models.email_template import EmailTemplate
 from app.models.kreisverband import Kreisverband, KVVorstandsmitglied
@@ -42,9 +42,9 @@ async def list_member_changes(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("mitarbeiter")),
+    current_user: User = Depends(require_member_changes_access()),
 ):
-    """List member changes with filters. Mitarbeiter+ can view."""
+    """List member changes. Mitarbeiter, Leitung, Admin (nicht Vorstand)."""
     query = db.query(MemberChange)
 
     if scenario:
@@ -62,9 +62,9 @@ async def list_member_changes(
 async def get_member_change(
     change_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("mitarbeiter")),
+    current_user: User = Depends(require_member_changes_access()),
 ):
-    """Get a single member change by ID. Mitarbeiter+ can view."""
+    """Get a single member change by ID."""
     change = db.query(MemberChange).filter(MemberChange.id == change_id).first()
     if not change:
         raise HTTPException(status_code=404, detail="Member change not found")
@@ -76,12 +76,9 @@ async def create_member_change(
     data: MemberChangeCreate,
     send_emails: bool = Query(True, description="Send notification emails immediately"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("mitarbeiter")),
+    current_user: User = Depends(require_member_changes_access()),
 ):
-    """
-    Create a member change record and optionally send emails.
-    Mitarbeiter+ can create and send.
-    """
+    """Create a member change and optionally send emails. Vorstand darf nicht."""
     valid_scenarios = [
         "eintritt", "austritt", "verbandswechsel_eintritt",
         "verbandswechsel_austritt", "verbandswechsel_intern", "veraenderung",
@@ -147,9 +144,9 @@ async def create_member_change(
 async def send_member_change_emails(
     change_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("mitarbeiter")),
+    current_user: User = Depends(require_member_changes_access()),
 ):
-    """Send emails for a draft member change. Mitarbeiter+ can send."""
+    """Send emails for a draft member change."""
     change = db.query(MemberChange).filter(MemberChange.id == change_id).first()
     if not change:
         raise HTTPException(status_code=404, detail="Member change not found")
@@ -170,9 +167,9 @@ async def resend_member_change_emails(
     change_id: int,
     data: ResendEmailsRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("mitarbeiter")),
+    current_user: User = Depends(require_member_changes_access()),
 ):
-    """E-Mails für diese Mitgliederänderung erneut senden. Auswahl: an Mitglied und/oder an KV. Mitarbeiter+."""
+    """E-Mails für diese Mitgliederänderung erneut senden."""
     change = db.query(MemberChange).filter(MemberChange.id == change_id).first()
     if not change:
         raise HTTPException(status_code=404, detail="Member change not found")

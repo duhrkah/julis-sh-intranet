@@ -30,7 +30,7 @@ const TYP_OPTIONS = [
 ] as const;
 
 export default function TemplatesPage() {
-  const { hasMinRole } = useAuth();
+  const { hasMinRole, isAdmin } = useAuth();
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [kvList, setKvList] = useState<Kreisverband[]>([]);
   const [loading, setLoading] = useState(true);
@@ -309,9 +309,11 @@ JuLis SH Intranet`}
                 <div className="mb-2 flex items-center gap-2 rounded border border-border bg-muted/30 px-3 py-2 text-sm">
                   <Paperclip className="h-4 w-4 shrink-0" />
                   <span>{templates.find((x) => x.id === editingId)?.attachment_original_filename}</span>
-                  <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => setAttachmentRemove(true)}>
-                    <X className="h-4 w-4" /> Entfernen
-                  </Button>
+                  {isAdmin && (
+                    <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => setAttachmentRemove(true)}>
+                      <X className="h-4 w-4" /> Entfernen
+                    </Button>
+                  )}
                 </div>
               )}
               <input
@@ -357,9 +359,11 @@ JuLis SH Intranet`}
                   <Button variant="ghost" size="icon" onClick={() => loadIntoForm(t)} title="Bearbeiten">
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => setConfirmDelete(t)} title="Löschen" className="text-destructive">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {isAdmin && (
+                    <Button variant="ghost" size="icon" onClick={() => setConfirmDelete(t)} title="Löschen" className="text-destructive">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>

@@ -122,9 +122,9 @@ async def update_category(
 async def delete_category(
     category_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("vorstand")),
+    current_user: User = Depends(require_role("admin")),
 ):
-    """Delete a category (soft-delete by deactivating)."""
+    """Kategorie löschen (Soft-Delete durch Deaktivieren). Nur Admin."""
     category = db.query(Category).filter(Category.id == category_id).first()
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
