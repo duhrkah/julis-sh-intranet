@@ -12,10 +12,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
-import { LogOut, User, Settings } from 'lucide-react';
+import { LogOut, Menu, Settings } from 'lucide-react';
 import Link from 'next/link';
 
-export function Header() {
+type HeaderProps = { onMenuClick?: () => void };
+
+export function Header({ onMenuClick }: HeaderProps) {
   const { user, logout, displayRole } = useAuth();
 
   const initials = user
@@ -25,9 +27,15 @@ export function Header() {
     : '?';
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-border bg-background px-4">
-      <div className="flex-1" />
-      <div className="flex items-center gap-1">
+    <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-background px-3 sm:px-4">
+      <div className="flex flex-1 items-center gap-2">
+        {onMenuClick && (
+          <Button variant="ghost" size="icon" className="md:hidden" onClick={onMenuClick} aria-label="Menü öffnen">
+            <Menu className="h-5 w-5" />
+          </Button>
+        )}
+      </div>
+      <div className="flex items-center gap-1 sm:gap-2">
         <ThemeToggle />
         <DropdownMenu>
         <DropdownMenuTrigger asChild>

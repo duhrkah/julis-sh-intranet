@@ -159,7 +159,7 @@ export default function KreisverbandDetailPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <p className="text-muted-foreground">Lade …</p>
       </div>
     );
@@ -167,7 +167,7 @@ export default function KreisverbandDetailPage() {
 
   if (error && !kv) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <p className="text-destructive">{error}</p>
         <Button variant="outline" className="mt-4" asChild>
           <Link href="/kreisverband">Zurück zur Übersicht</Link>
@@ -179,7 +179,7 @@ export default function KreisverbandDetailPage() {
   if (!kv) return null;
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <ConfirmDialog
         open={confirmVorstand !== null}
         onOpenChange={(open) => !open && setConfirmVorstand(null)}

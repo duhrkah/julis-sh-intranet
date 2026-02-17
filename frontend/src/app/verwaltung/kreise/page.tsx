@@ -182,7 +182,7 @@ export default function VerwaltungKreisePage() {
   if (!hasMinRole('admin')) return null;
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <ConfirmDialog
         open={!!confirmDeactivate}
         onOpenChange={(open) => !open && setConfirmDeactivate(null)}
@@ -308,7 +308,7 @@ export default function VerwaltungKreisePage() {
           ) : list.length === 0 ? (
             <p className="text-muted-foreground">Keine Kreisverbände angelegt.</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="table-scroll">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-left">

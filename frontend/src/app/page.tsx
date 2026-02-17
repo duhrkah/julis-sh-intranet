@@ -30,7 +30,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="min-h-screen p-4 sm:p-6">
       <div className="mx-auto max-w-5xl">
         <h1 className="mb-2 text-2xl font-semibold text-foreground">
           Willkommen im JuLis SH Intranet

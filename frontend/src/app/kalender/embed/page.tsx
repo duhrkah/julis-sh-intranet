@@ -129,14 +129,14 @@ export default function KalenderEmbedPage() {
   }, [allEvents, calendarFilter]);
 
   return (
-    <div className="min-h-full bg-background p-2">
+    <div className="min-h-full min-w-0 bg-background p-2 sm:p-3">
       {loading ? (
         <p className="p-4 text-sm text-muted-foreground">Lade …</p>
       ) : (
         <>
-          <div className="mb-2 flex flex-wrap items-center gap-2">
+          <div className="mb-2 flex flex-wrap items-center gap-2 sm:gap-3">
             <span className="text-xs font-medium text-muted-foreground">Kalender:</span>
-            <div className="flex rounded-md border border-input bg-muted/30 p-0.5">
+            <div className="flex flex-wrap rounded-md border border-input bg-muted/30 p-0.5">
               {CALENDAR_FILTER_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}

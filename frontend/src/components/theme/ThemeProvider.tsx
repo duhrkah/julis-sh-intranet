@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 export type Theme = 'light' | 'dark' | 'system';
 
@@ -26,7 +27,13 @@ function getStoredTheme(): Theme {
   return 'system';
 }
 
+/** Embed-Kalender unter /kalender/embed darf keinen Dark Mode haben. */
+function isCalendarEmbedPath(pathname: string | null): boolean {
+  return pathname === '/kalender/embed' || (pathname?.startsWith('/kalender/embed/') ?? false);
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const [theme, setThemeState] = useState<Theme>('system');
   const [resolved, setResolved] = useState<'light' | 'dark'>('light');
   const [mounted, setMounted] = useState(false);
@@ -38,20 +45,24 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!mounted) return;
-    const resolvedTheme = theme === 'system' ? getSystemTheme() : theme;
+    const embedForcesLight = isCalendarEmbedPath(pathname);
+    const resolvedTheme = embedForcesLight ? 'light' : (theme === 'system' ? getSystemTheme() : theme);
     setResolved(resolvedTheme);
     const root = document.documentElement;
     root.classList.remove('light', 'dark');
     root.classList.add(resolvedTheme);
-  }, [theme, mounted]);
+  }, [theme, mounted, pathname]);
 
   useEffect(() => {
     if (!mounted || theme !== 'system') return;
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const handler = () => setResolved(mq.matches ? 'dark' : 'light');
+    const handler = () => {
+      if (isCalendarEmbedPath(pathname)) return;
+      setResolved(mq.matches ? 'dark' : 'light');
+    };
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
-  }, [theme, mounted]);
+  }, [theme, mounted, pathname]);
 
   const setTheme = (value: Theme) => {
     setThemeState(value);

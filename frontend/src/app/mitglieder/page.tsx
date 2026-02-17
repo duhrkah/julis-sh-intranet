@@ -16,7 +16,7 @@ export default function MitgliederPage() {
   const canEdit = canAccessMemberChanges() && (user?.role === 'leitung' || user?.role === 'admin');
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <h1 className="mb-2 text-2xl font-semibold">Mitgliederänderungen</h1>
       <p className="mb-6 text-muted-foreground">
         Neue Änderung erfassen (Eintritt, Austritt, Verbandswechsel, Datenänderung), E-Mail-Templates und Empfänger verwalten.

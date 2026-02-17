@@ -28,7 +28,7 @@ export default function KreisverbandPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <p className="text-muted-foreground">Lade Kreisverbände …</p>
       </div>
     );
@@ -36,14 +36,14 @@ export default function KreisverbandPage() {
 
   if (error) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <p className="text-destructive">{error}</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">Kreisverbände</h1>

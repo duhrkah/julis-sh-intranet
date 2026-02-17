@@ -158,7 +158,7 @@ export default function BenutzerPage() {
   if (!hasMinRole('admin')) return null;
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <ConfirmDialog
         open={!!confirmDeleteUser}
         onOpenChange={(open) => !open && setConfirmDeleteUser(null)}
@@ -313,7 +313,7 @@ export default function BenutzerPage() {
           ) : users.length === 0 ? (
             <p className="text-muted-foreground">Keine Benutzer vorhanden.</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="table-scroll">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-left">

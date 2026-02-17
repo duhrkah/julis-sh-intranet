@@ -19,7 +19,7 @@ export default function KalenderAdminLayout({
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <div className="mb-6 flex flex-wrap items-center gap-4">
         <Link
           href="/kalender"

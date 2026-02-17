@@ -383,7 +383,7 @@ export default function DocumentDetailPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <p className="text-muted-foreground">Lade …</p>
       </div>
     );
@@ -391,7 +391,7 @@ export default function DocumentDetailPage() {
 
   if (error && !doc) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <p className="text-destructive">{error}</p>
         <Button variant="outline" className="mt-4" asChild>
           <Link href="/dokumente/satzung">Zurück</Link>
@@ -403,7 +403,7 @@ export default function DocumentDetailPage() {
   if (!doc) return null;
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <ConfirmDialog
         open={confirmAmendment.open}
         onOpenChange={(open) => setConfirmAmendment((p) => ({ ...p, open, amendmentId: open ? p.amendmentId : null }))}

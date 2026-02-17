@@ -27,7 +27,7 @@ export default function SitzungenPage() {
   if (!hasMinRole('mitarbeiter')) return null;
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <h1 className="mb-2 text-2xl font-semibold">Sitzungen</h1>
       <p className="mb-6 text-muted-foreground">
         Einladungen und Protokolle erstellen (Word-Vorlagen → PDF).

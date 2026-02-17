@@ -159,10 +159,10 @@ export default function KalenderEventPage() {
   };
 
   if (!hasMinRole('mitarbeiter')) return null;
-  if (loading) return <div className="p-6"><p className="text-muted-foreground">Lade …</p></div>;
+  if (loading) return <div className="p-4 sm:p-6"><p className="text-muted-foreground">Lade …</p></div>;
   if (error && !event) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <p className="text-destructive">{error}</p>
         <Button variant="outline" className="mt-4" asChild><Link href="/kalender">Zurück</Link></Button>
       </div>
@@ -171,7 +171,7 @@ export default function KalenderEventPage() {
   if (!event) return null;
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <ConfirmDialog
         open={confirmDeleteEvent}
         onOpenChange={setConfirmDeleteEvent}

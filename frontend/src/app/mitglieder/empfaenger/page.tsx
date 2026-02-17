@@ -68,7 +68,7 @@ export default function EmpfaengerPage() {
   if (!hasMinRole('leitung')) return null;
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <Button variant="ghost" size="sm" className="mb-4" asChild>
         <Link href="/mitglieder" className="flex items-center gap-1">
           <ArrowLeft className="h-4 w-4" /> Zurück

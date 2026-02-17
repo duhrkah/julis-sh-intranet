@@ -12,7 +12,6 @@ import {
   FileText,
   Settings,
   LayoutDashboard,
-  Mail,
   ClipboardList,
   ClipboardCheck,
 } from 'lucide-react';
@@ -31,18 +30,20 @@ const adminItems: { href: string; label: string; icon: React.ComponentType<{ cla
   { href: '/verwaltung', label: 'Verwaltung', icon: Settings, minRole: 'admin' },
 ];
 
-export function Sidebar() {
+type SidebarProps = { mobileOpen?: boolean; onMobileClose?: () => void };
+
+export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const { hasMinRole, canAccessMemberChanges } = useAuth();
 
-  return (
-    <aside className="flex h-full w-56 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
-      <div className="flex h-14 items-center border-b border-sidebar-border px-4">
-        <Link href="/" className="flex items-center gap-2 font-semibold text-sidebar-foreground">
+  const navContent = (
+    <>
+      <div className="flex h-14 shrink-0 items-center border-b border-sidebar-border px-4">
+        <Link href="/" className="flex items-center gap-2 font-semibold text-sidebar-foreground" onClick={onMobileClose}>
           <Image src="/logo.svg" alt="JuLis SH" width={140} height={40} className="h-10 w-auto" priority />
         </Link>
       </div>
-      <nav className="flex-1 space-y-0.5 p-3">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
         {navItems.map((item) => {
           const allowed = item.href === '/mitglieder' ? canAccessMemberChanges() : hasMinRole(item.minRole);
           if (!allowed) return null;
@@ -52,6 +53,7 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={onMobileClose}
               className={cn(
                 'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
                 isActive
@@ -72,6 +74,7 @@ export function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={onMobileClose}
                 className={cn(
                   'mt-4 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
                   isActive
@@ -85,6 +88,30 @@ export function Sidebar() {
             );
           })}
       </nav>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile: Backdrop + drawer */}
+      {mobileOpen && (
+        <button
+          type="button"
+          aria-label="Menü schließen"
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          onClick={onMobileClose}
+        />
+      )}
+      <aside
+        className={cn(
+          'flex h-full flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground',
+          'w-56 shrink-0',
+          'fixed inset-y-0 left-0 z-50 transform transition-transform duration-200 ease-out md:relative md:translate-x-0',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
+        {navContent}
+      </aside>
+    </>
   );
 }

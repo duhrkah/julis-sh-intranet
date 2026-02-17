@@ -56,7 +56,7 @@ export default function KreisverbandUebersichtPage() {
   if (!hasMinRole('mitarbeiter')) return null;
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <Button variant="ghost" size="sm" className="mb-4" asChild>
         <Link href="/kreisverband" className="flex items-center gap-1">
           <ArrowLeft className="h-4 w-4" /> Zurück zu Kreisverbänden
@@ -112,7 +112,7 @@ export default function KreisverbandUebersichtPage() {
       )}
 
       <Card>
-        <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0 pb-2">
+        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:space-y-0 pb-2">
           <div>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
@@ -144,7 +144,7 @@ export default function KreisverbandUebersichtPage() {
           {loading ? (
             <p className="text-muted-foreground">Lade …</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="table-scroll">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-left">

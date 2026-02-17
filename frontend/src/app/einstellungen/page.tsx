@@ -89,14 +89,14 @@ export default function EinstellungenPage() {
 
   if (!user) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <p className="text-muted-foreground">Bitte melde dich an.</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <h1 className="text-2xl font-semibold">Einstellungen</h1>
       <p className="mt-1 text-muted-foreground">
         Persönliche Einstellungen für {user.full_name || user.username}.

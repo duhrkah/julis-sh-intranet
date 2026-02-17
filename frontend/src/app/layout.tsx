@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Anybody } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/lib/hooks/useAuth';
@@ -16,10 +16,22 @@ export const metadata: Metadata = {
   description: 'Internes Verwaltungssystem der Jungen Liberalen Schleswig-Holstein',
 };
 
-/** Setzt Dark/Light-Klasse vor dem ersten Paint (vermeidet Flackern). */
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+};
+
+/** Setzt Dark/Light-Klasse vor dem ersten Paint (vermeidet Flackern). Embed-Kalender immer Light. */
 function ThemeScript() {
   const script = `
     (function() {
+      var path = window.location.pathname || '';
+      var isEmbed = path === '/kalender/embed' || path.indexOf('/kalender/embed/') === 0;
+      if (isEmbed) {
+        document.documentElement.classList.add('light');
+        return;
+      }
       var key = 'julis-intranet-theme';
       var stored = localStorage.getItem(key);
       var dark = stored === 'dark' || (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);

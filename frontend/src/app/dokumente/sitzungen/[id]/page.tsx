@@ -437,7 +437,7 @@ export default function SitzungDetailPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <p className="text-muted-foreground">Lade …</p>
       </div>
     );
@@ -445,7 +445,7 @@ export default function SitzungDetailPage() {
 
   if (error && !meeting) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <p className="text-destructive">{error}</p>
         <Button variant="outline" className="mt-4" asChild>
           <Link href="/dokumente/sitzungen">Zurück</Link>
