@@ -184,7 +184,7 @@ export default function TemplatesPage() {
         <CardHeader>
           <CardTitle className="text-base">Beispiel: So kann ein Template aussehen</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Verfügbare Platzhalter: {'{vorname}'}, {'{nachname}'}, {'{email}'}, {'{mitgliedsnummer}'}, {'{kreisverband}'}, {'{kreis}'}, {'{kreisverband_alt}'}, {'{kreisverband_neu}'}, {'{telefon}'}, {'{strasse}'}, {'{hausnummer}'}, {'{plz}'}, {'{ort}'}, {'{geburtsdatum}'}, {'{bemerkung}'}, {'{scenario}'}, {'{eintrittsdatum}'}. Bei Empfänger-Templates zusätzlich: {'{empfaenger_name}'}, {'{vorsitzender}'}, {'{schatzmeister}'}. Für Änderungsanträge (Szenario „aenderungsantrag“, Typ „benachrichtigung“): {'{dokument_titel}'}, {'{antragsteller}'}, {'{antrag_text}'}, {'{begruendung}'}, {'{link}'}, {'{stellen_uebersicht}'}.
+            Verfügbare Platzhalter: {'{vorname}'}, {'{nachname}'}, {'{email}'}, {'{mitgliedsnummer}'}, {'{kreisverband}'}, {'{kreis}'}, {'{kreisverband_alt}'}, {'{kreisverband_neu}'}, {'{telefon}'}, {'{strasse}'}, {'{hausnummer}'}, {'{plz}'}, {'{ort}'}, {'{geburtsdatum}'}, {'{bemerkung}'}, {'{scenario}'}, {'{eintrittsdatum}'}, {'{austrittsdatum}'}, {'{wechseldatum}'}. Bei Empfänger-Templates zusätzlich: {'{empfaenger_name}'}, {'{vorsitzender}'}, {'{schatzmeister}'}. Für Änderungsanträge (Szenario „aenderungsantrag“, Typ „benachrichtigung“): {'{dokument_titel}'}, {'{antragsteller}'}, {'{antrag_text}'}, {'{begruendung}'}, {'{link}'}, {'{stellen_uebersicht}'}.
           </p>
         </CardHeader>
         <CardContent className="space-y-6 text-sm">

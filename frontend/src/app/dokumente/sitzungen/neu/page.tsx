@@ -137,7 +137,7 @@ export default function NeueSitzungPage() {
   const [loadingWithInvite, setLoadingWithInvite] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!hasMinRole('vorstand')) {
+  if (!hasMinRole('leitung')) {
     router.replace('/dokumente/sitzungen');
     return null;
   }

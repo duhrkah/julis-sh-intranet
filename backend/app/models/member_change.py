@@ -22,6 +22,8 @@ class MemberChange(Base):
     plz = Column(String(10), nullable=True)
     ort = Column(String(255), nullable=True)
     geburtsdatum = Column(String(20), nullable=True)
+    austrittsdatum = Column(String(20), nullable=True)   # bei Austritt / Verbandswechsel Austritt
+    wechseldatum = Column(String(20), nullable=True)     # bei Verbandswechsel intern
 
     # Kreisverband-Referenzen
     kreisverband_id = Column(Integer, ForeignKey("kreisverband.id", ondelete="SET NULL"), nullable=True, index=True)

@@ -33,7 +33,7 @@ export default function StammdatenPage() {
     }
   };
 
-  if (!hasMinRole('leitung')) return null;
+  if (!hasMinRole('admin')) return null;
 
   return (
     <div className="p-6">

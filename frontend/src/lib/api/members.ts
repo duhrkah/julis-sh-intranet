@@ -24,6 +24,8 @@ export interface MemberChange {
   plz?: string | null;
   ort?: string | null;
   geburtsdatum?: string | null;
+  austrittsdatum?: string | null;
+  wechseldatum?: string | null;
   kreisverband_id?: number | null;
   kreisverband_alt_id?: number | null;
   kreisverband_neu_id?: number | null;
@@ -45,11 +47,16 @@ export interface MemberChangeCreate {
   plz?: string | null;
   ort?: string | null;
   geburtsdatum?: string | null;
+  austrittsdatum?: string | null;
+  wechseldatum?: string | null;
   kreisverband_id?: number | null;
   kreisverband_alt_id?: number | null;
   kreisverband_neu_id?: number | null;
   bemerkung?: string | null;
 }
+
+/** Nur bei Austritt / Verbandswechsel Austritt: reduzierte Felder (Name, Vorname, Geburtsdatum, Mitgliedsnummer, Austrittsdatum). */
+export const REDUCED_FIELD_SCENARIOS: MemberChangeScenario[] = ['austritt', 'verbandswechsel_austritt'];
 
 export async function getMemberChanges(params?: {
   scenario?: string;

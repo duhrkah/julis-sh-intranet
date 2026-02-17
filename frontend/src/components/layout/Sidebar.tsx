@@ -21,14 +21,14 @@ const navItems: { href: string; label: string; icon: React.ComponentType<{ class
   { href: '/', label: 'Dashboard', icon: LayoutDashboard, minRole: 'mitarbeiter' },
   { href: '/kalender', label: 'Kalender', icon: Calendar, minRole: 'mitarbeiter' },
   { href: '/kalender/admin/freigabe', label: 'Terminfreigabe', icon: ClipboardCheck, minRole: 'vorstand' },
-  { href: '/mitglieder', label: 'Mitgliederänderungen', icon: Users, minRole: 'vorstand' },
-  { href: '/kreisverband', label: 'Kreisverbände', icon: Building2, minRole: 'vorstand' },
+  { href: '/mitglieder', label: 'Mitgliederänderungen', icon: Users, minRole: 'mitarbeiter' },
+  { href: '/kreisverband', label: 'Kreisverbände', icon: Building2, minRole: 'mitarbeiter' },
   { href: '/dokumente/satzung', label: 'Dokumente', icon: FileText, minRole: 'vorstand' },
-  { href: '/dokumente/sitzungen', label: 'Sitzungen', icon: ClipboardList, minRole: 'vorstand' },
+  { href: '/dokumente/sitzungen', label: 'Sitzungen', icon: ClipboardList, minRole: 'mitarbeiter' },
 ];
 
-const adminItems: { href: string; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { href: '/verwaltung', label: 'Verwaltung', icon: Settings },
+const adminItems: { href: string; label: string; icon: React.ComponentType<{ className?: string }>; minRole: 'admin' }[] = [
+  { href: '/verwaltung', label: 'Verwaltung', icon: Settings, minRole: 'admin' },
 ];
 
 export function Sidebar() {
@@ -63,7 +63,7 @@ export function Sidebar() {
             </Link>
           );
         })}
-        {hasMinRole('leitung') &&
+        {hasMinRole('admin') &&
           adminItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname.startsWith(item.href);

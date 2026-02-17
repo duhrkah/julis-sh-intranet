@@ -8,6 +8,7 @@ import { getKreisverbande, type Kreisverband } from '@/lib/api/kreisverband';
 import {
   createMemberChange,
   SZENARIEN,
+  REDUCED_FIELD_SCENARIOS,
   type MemberChangeCreate,
 } from '@/lib/api/members';
 import { getApiErrorMessage } from '@/lib/apiError';
@@ -26,7 +27,7 @@ export default function NeueMitgliederänderungPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [form, setForm] = useState<MemberChangeCreate>({
+  const [form, setForm] = useState<MemberChangeCreate & { austrittsdatum?: string; wechseldatum?: string }>({
     scenario: 'eintritt',
     mitgliedsnummer: '',
     vorname: '',
@@ -38,6 +39,8 @@ export default function NeueMitgliederänderungPage() {
     plz: '',
     ort: '',
     geburtsdatum: '',
+    austrittsdatum: '',
+    wechseldatum: '',
     kreisverband_id: undefined,
     kreisverband_alt_id: undefined,
     kreisverband_neu_id: undefined,
@@ -45,22 +48,30 @@ export default function NeueMitgliederänderungPage() {
   });
 
   useEffect(() => {
-    if (!hasMinRole('leitung')) return;
+    if (!hasMinRole('mitarbeiter')) return;
     getKreisverbande({ ist_aktiv: true })
       .then(setKvList)
       .catch(() => setKvList([]));
   }, [hasMinRole]);
 
-  if (!hasMinRole('leitung')) {
+  if (!hasMinRole('mitarbeiter')) {
     router.replace('/mitglieder');
     return null;
   }
 
   const needsKvAltNeu = form.scenario.startsWith('verbandswechsel');
+  const reducedFields = REDUCED_FIELD_SCENARIOS.includes(form.scenario as (typeof REDUCED_FIELD_SCENARIOS)[number]);
+  const needsAustrittsdatum = form.scenario === 'austritt' || form.scenario === 'verbandswechsel_austritt';
+  const needsWechseldatum = form.scenario === 'verbandswechsel_intern';
 
   const canProceed = () => {
     if (step === 0) return true;
-    if (step === 1) return form.vorname.trim() && form.nachname.trim();
+    if (step === 1) {
+      if (!form.vorname.trim() || !form.nachname.trim()) return false;
+      if (needsAustrittsdatum && !(form.austrittsdatum ?? '').trim()) return false;
+      if (needsWechseldatum && !(form.wechseldatum ?? '').trim()) return false;
+      return true;
+    }
     if (step === 2) {
       if (needsKvAltNeu) return form.kreisverband_alt_id != null && form.kreisverband_neu_id != null;
       return form.kreisverband_id != null;
@@ -83,6 +94,8 @@ export default function NeueMitgliederänderungPage() {
         plz: form.plz?.trim() || undefined,
         ort: form.ort?.trim() || undefined,
         geburtsdatum: form.geburtsdatum?.trim() || undefined,
+        austrittsdatum: form.austrittsdatum?.trim() || undefined,
+        wechseldatum: form.wechseldatum?.trim() || undefined,
         bemerkung: form.bemerkung?.trim() || undefined,
       };
       await createMemberChange(payload, sendEmails);
@@ -130,7 +143,8 @@ export default function NeueMitgliederänderungPage() {
           <CardTitle>{STEPS[step]}</CardTitle>
           <CardDescription>
             {step === 0 && 'Art der Änderung auswählen.'}
-            {step === 1 && 'Name, Mitgliedsnummer und Kontaktdaten der Person.'}
+            {step === 1 && reducedFields && 'Nur Name, Vorname, Geburtsdatum, Mitgliedsnummer und Austrittsdatum.'}
+            {step === 1 && !reducedFields && 'Name, Mitgliedsnummer und Kontaktdaten der Person.'}
             {step === 2 && needsKvAltNeu && 'Beide Kreisverbände (von / nach) wählen – beide werden benachrichtigt.'}
             {step === 2 && !needsKvAltNeu && 'Kreisverband zur Benachrichtigung wählen (wird bei allen Szenarien benötigt).'}
             {step === 3 && 'Optionale Bemerkung.'}
@@ -159,88 +173,145 @@ export default function NeueMitgliederänderungPage() {
           {/* Step 1: Persönliche Daten */}
           {step === 1 && (
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <label className="mb-1 block text-sm font-medium">Mitgliedsnummer</label>
-                <Input
-                  value={form.mitgliedsnummer ?? ''}
-                  onChange={(e) => setForm((f) => ({ ...f, mitgliedsnummer: e.target.value }))}
-                  placeholder="z. B. 12345"
-                />
-                <p className="mt-1 text-xs text-muted-foreground">Wird in E-Mails und Benachrichtigungen mit angegeben.</p>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium">Vorname *</label>
-                <Input
-                  value={form.vorname}
-                  onChange={(e) => setForm((f) => ({ ...f, vorname: e.target.value }))}
-                  placeholder="Vorname"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium">Nachname *</label>
-                <Input
-                  value={form.nachname}
-                  onChange={(e) => setForm((f) => ({ ...f, nachname: e.target.value }))}
-                  placeholder="Nachname"
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="mb-1 block text-sm font-medium">E-Mail</label>
-                <Input
-                  type="email"
-                  value={form.email ?? ''}
-                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                  placeholder="email@example.de"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium">Telefon</label>
-                <Input
-                  value={form.telefon ?? ''}
-                  onChange={(e) => setForm((f) => ({ ...f, telefon: e.target.value }))}
-                  placeholder="Telefon"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium">Geburtsdatum</label>
-                <Input
-                  type="date"
-                  value={form.geburtsdatum ?? ''}
-                  onChange={(e) => setForm((f) => ({ ...f, geburtsdatum: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium">Straße</label>
-                <Input
-                  value={form.strasse ?? ''}
-                  onChange={(e) => setForm((f) => ({ ...f, strasse: e.target.value }))}
-                  placeholder="Straße"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium">Hausnummer</label>
-                <Input
-                  value={form.hausnummer ?? ''}
-                  onChange={(e) => setForm((f) => ({ ...f, hausnummer: e.target.value }))}
-                  placeholder="z. B. 1a"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium">PLZ</label>
-                <Input
-                  value={form.plz ?? ''}
-                  onChange={(e) => setForm((f) => ({ ...f, plz: e.target.value }))}
-                  placeholder="PLZ"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium">Ort</label>
-                <Input
-                  value={form.ort ?? ''}
-                  onChange={(e) => setForm((f) => ({ ...f, ort: e.target.value }))}
-                  placeholder="Ort"
-                />
-              </div>
+              {reducedFields ? (
+                <>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">Vorname *</label>
+                    <Input
+                      value={form.vorname}
+                      onChange={(e) => setForm((f) => ({ ...f, vorname: e.target.value }))}
+                      placeholder="Vorname"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">Nachname *</label>
+                    <Input
+                      value={form.nachname}
+                      onChange={(e) => setForm((f) => ({ ...f, nachname: e.target.value }))}
+                      placeholder="Nachname"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">Geburtsdatum</label>
+                    <Input
+                      type="date"
+                      value={form.geburtsdatum ?? ''}
+                      onChange={(e) => setForm((f) => ({ ...f, geburtsdatum: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">Mitgliedsnummer</label>
+                    <Input
+                      value={form.mitgliedsnummer ?? ''}
+                      onChange={(e) => setForm((f) => ({ ...f, mitgliedsnummer: e.target.value }))}
+                      placeholder="z. B. 12345"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="mb-1 block text-sm font-medium">Austrittsdatum *</label>
+                    <Input
+                      type="date"
+                      value={form.austrittsdatum ?? ''}
+                      onChange={(e) => setForm((f) => ({ ...f, austrittsdatum: e.target.value }))}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="sm:col-span-2">
+                    <label className="mb-1 block text-sm font-medium">Mitgliedsnummer</label>
+                    <Input
+                      value={form.mitgliedsnummer ?? ''}
+                      onChange={(e) => setForm((f) => ({ ...f, mitgliedsnummer: e.target.value }))}
+                      placeholder="z. B. 12345"
+                    />
+                    <p className="mt-1 text-xs text-muted-foreground">Wird in E-Mails und Benachrichtigungen mit angegeben.</p>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">Vorname *</label>
+                    <Input
+                      value={form.vorname}
+                      onChange={(e) => setForm((f) => ({ ...f, vorname: e.target.value }))}
+                      placeholder="Vorname"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">Nachname *</label>
+                    <Input
+                      value={form.nachname}
+                      onChange={(e) => setForm((f) => ({ ...f, nachname: e.target.value }))}
+                      placeholder="Nachname"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="mb-1 block text-sm font-medium">E-Mail</label>
+                    <Input
+                      type="email"
+                      value={form.email ?? ''}
+                      onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                      placeholder="email@example.de"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">Telefon</label>
+                    <Input
+                      value={form.telefon ?? ''}
+                      onChange={(e) => setForm((f) => ({ ...f, telefon: e.target.value }))}
+                      placeholder="Telefon"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">Geburtsdatum</label>
+                    <Input
+                      type="date"
+                      value={form.geburtsdatum ?? ''}
+                      onChange={(e) => setForm((f) => ({ ...f, geburtsdatum: e.target.value }))}
+                    />
+                  </div>
+                  {needsWechseldatum && (
+                    <div className="sm:col-span-2">
+                      <label className="mb-1 block text-sm font-medium">Wechseldatum *</label>
+                      <Input
+                        type="date"
+                        value={form.wechseldatum ?? ''}
+                        onChange={(e) => setForm((f) => ({ ...f, wechseldatum: e.target.value }))}
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">Straße</label>
+                    <Input
+                      value={form.strasse ?? ''}
+                      onChange={(e) => setForm((f) => ({ ...f, strasse: e.target.value }))}
+                      placeholder="Straße"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">Hausnummer</label>
+                    <Input
+                      value={form.hausnummer ?? ''}
+                      onChange={(e) => setForm((f) => ({ ...f, hausnummer: e.target.value }))}
+                      placeholder="z. B. 1a"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">PLZ</label>
+                    <Input
+                      value={form.plz ?? ''}
+                      onChange={(e) => setForm((f) => ({ ...f, plz: e.target.value }))}
+                      placeholder="PLZ"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">Ort</label>
+                    <Input
+                      value={form.ort ?? ''}
+                      onChange={(e) => setForm((f) => ({ ...f, ort: e.target.value }))}
+                      placeholder="Ort"
+                    />
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -317,6 +388,8 @@ export default function NeueMitgliederänderungPage() {
               <p><span className="font-medium">Szenario:</span> {SZENARIEN.find((s) => s.value === form.scenario)?.label ?? form.scenario}</p>
               <p><span className="font-medium">Name:</span> {form.vorname} {form.nachname}</p>
               {form.mitgliedsnummer && <p><span className="font-medium">Mitgliedsnummer:</span> {form.mitgliedsnummer}</p>}
+              {form.austrittsdatum && <p><span className="font-medium">Austrittsdatum:</span> {form.austrittsdatum}</p>}
+              {form.wechseldatum && <p><span className="font-medium">Wechseldatum:</span> {form.wechseldatum}</p>}
               {form.email && <p><span className="font-medium">E-Mail:</span> {form.email}</p>}
               {form.kreisverband_id != null && (
                 <p><span className="font-medium">Kreisverband:</span> {kvList.find((k) => k.id === form.kreisverband_id)?.name ?? form.kreisverband_id}</p>

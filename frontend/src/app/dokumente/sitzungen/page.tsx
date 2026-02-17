@@ -17,14 +17,14 @@ export default function SitzungenPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!hasMinRole('vorstand')) return;
+    if (!hasMinRole('mitarbeiter')) return;
     getMeetings()
       .then(setMeetings)
       .catch(() => setMeetings([]))
       .finally(() => setLoading(false));
   }, [hasMinRole]);
 
-  if (!hasMinRole('vorstand')) return null;
+  if (!hasMinRole('mitarbeiter')) return null;
 
   return (
     <div className="p-6">
@@ -33,13 +33,15 @@ export default function SitzungenPage() {
         Einladungen und Protokolle erstellen (Word-Vorlagen → PDF).
       </p>
 
-      <div className="mb-6">
-        <Button asChild>
-          <Link href="/dokumente/sitzungen/neu">
-            <Plus className="mr-1 h-4 w-4" /> Neue Sitzung
-          </Link>
-        </Button>
-      </div>
+      {hasMinRole('leitung') && (
+        <div className="mb-6">
+          <Button asChild>
+            <Link href="/dokumente/sitzungen/neu">
+              <Plus className="mr-1 h-4 w-4" /> Neue Sitzung
+            </Link>
+          </Button>
+        </div>
+      )}
 
       {loading ? (
         <p className="text-muted-foreground">Lade …</p>

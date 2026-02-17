@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function HomePage() {
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, loading, isAuthenticated, hasMinRole } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -40,51 +40,72 @@ export default function HomePage() {
         </p>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Card className="border-sidebar-border bg-card">
-            <CardHeader>
-              <CardTitle className="text-lg">Kalender</CardTitle>
-              <CardDescription>Events ansehen und verwalten</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild variant="default" className="w-full">
-                <Link href="/kalender">Zum Kalender</Link>
-              </Button>
-            </CardContent>
-          </Card>
-          <Card className="border-sidebar-border bg-card">
-            <CardHeader>
-              <CardTitle className="text-lg">Mitgliederänderungen</CardTitle>
-              <CardDescription>Eintritt, Austritt, Verbandswechsel</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild variant="default" className="w-full">
-                <Link href="/mitglieder">Zu Mitgliederänderungen</Link>
-              </Button>
-            </CardContent>
-          </Card>
-          <Card className="border-sidebar-border bg-card">
-            <CardHeader>
-              <CardTitle className="text-lg">Kreisverbände</CardTitle>
-              <CardDescription>KVs und Vorstände verwalten</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild variant="default" className="w-full">
-                <Link href="/kreisverband">Zu Kreisverbänden</Link>
-              </Button>
-            </CardContent>
-          </Card>
-          <Card className="border-sidebar-border bg-card">
-            <CardHeader>
-              <CardTitle className="text-lg">Dokumente</CardTitle>
-              <CardDescription>Satzung, GO, Sitzungen</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild variant="default" className="w-full">
-                <Link href="/dokumente/satzung">Zu Dokumenten</Link>
-              </Button>
-            </CardContent>
-          </Card>
-          {user && (user.role === 'admin' || user.role === 'leitung') && (
+          {hasMinRole('mitarbeiter') && (
+            <Card className="border-sidebar-border bg-card">
+              <CardHeader>
+                <CardTitle className="text-lg">Kalender</CardTitle>
+                <CardDescription>Termine für den Landesverband eintragen</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild variant="default" className="w-full">
+                  <Link href="/kalender">Zum Kalender</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+          {hasMinRole('mitarbeiter') && (
+            <Card className="border-sidebar-border bg-card">
+              <CardHeader>
+                <CardTitle className="text-lg">Mitgliederänderungen</CardTitle>
+                <CardDescription>Eintritt, Austritt, Verbandswechsel</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild variant="default" className="w-full">
+                  <Link href="/mitglieder">Zu Mitgliederänderungen</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+          {hasMinRole('mitarbeiter') && (
+            <Card className="border-sidebar-border bg-card">
+              <CardHeader>
+                <CardTitle className="text-lg">Kreisverbände</CardTitle>
+                <CardDescription>Einsehen und Protokolle hinterlegen</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild variant="default" className="w-full">
+                  <Link href="/kreisverband">Zu Kreisverbänden</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+          {hasMinRole('vorstand') && (
+            <Card className="border-sidebar-border bg-card">
+              <CardHeader>
+                <CardTitle className="text-lg">Dokumente</CardTitle>
+                <CardDescription>Satzung, GO, Sitzungen</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild variant="default" className="w-full">
+                  <Link href="/dokumente/satzung">Zu Dokumenten</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+          {hasMinRole('mitarbeiter') && (
+            <Card className="border-sidebar-border bg-card">
+              <CardHeader>
+                <CardTitle className="text-lg">Sitzungen</CardTitle>
+                <CardDescription>Protokolle schreiben</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild variant="default" className="w-full">
+                  <Link href="/dokumente/sitzungen">Zu Sitzungen</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+          {hasMinRole('admin') && (
             <Card className="border-sidebar-border bg-card">
               <CardHeader>
                 <CardTitle className="text-lg">Verwaltung</CardTitle>

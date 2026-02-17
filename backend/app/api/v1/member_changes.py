@@ -1,8 +1,20 @@
 """Member change endpoints - create, send emails, list, get by ID"""
+from datetime import datetime as dt
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import List, Optional
+
+
+def _format_date_for_template(value: Optional[str]) -> str:
+    """Format YYYY-MM-DD to DD.MM.YYYY for email templates."""
+    if not value:
+        return ""
+    try:
+        d = dt.strptime(value.strip()[:10], "%Y-%m-%d")
+        return d.strftime("%d.%m.%Y")
+    except Exception:
+        return value
 
 from app.api.deps import get_db
 from app.core.rbac import require_role
@@ -30,9 +42,9 @@ async def list_member_changes(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("vorstand")),
+    current_user: User = Depends(require_role("mitarbeiter")),
 ):
-    """List member changes with filters. Vorstand+ can view."""
+    """List member changes with filters. Mitarbeiter+ can view."""
     query = db.query(MemberChange)
 
     if scenario:
@@ -50,9 +62,9 @@ async def list_member_changes(
 async def get_member_change(
     change_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("vorstand")),
+    current_user: User = Depends(require_role("mitarbeiter")),
 ):
-    """Get a single member change by ID. Vorstand+ can view."""
+    """Get a single member change by ID. Mitarbeiter+ can view."""
     change = db.query(MemberChange).filter(MemberChange.id == change_id).first()
     if not change:
         raise HTTPException(status_code=404, detail="Member change not found")
@@ -64,11 +76,11 @@ async def create_member_change(
     data: MemberChangeCreate,
     send_emails: bool = Query(True, description="Send notification emails immediately"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("leitung")),
+    current_user: User = Depends(require_role("mitarbeiter")),
 ):
     """
     Create a member change record and optionally send emails.
-    Leitung+ can create and send.
+    Mitarbeiter+ can create and send.
     """
     valid_scenarios = [
         "eintritt", "austritt", "verbandswechsel_eintritt",
@@ -112,6 +124,8 @@ async def create_member_change(
         plz=data.plz,
         ort=data.ort,
         geburtsdatum=data.geburtsdatum,
+        austrittsdatum=getattr(data, "austrittsdatum", None),
+        wechseldatum=getattr(data, "wechseldatum", None),
         kreisverband_id=data.kreisverband_id,
         kreisverband_alt_id=data.kreisverband_alt_id,
         kreisverband_neu_id=data.kreisverband_neu_id,
@@ -133,9 +147,9 @@ async def create_member_change(
 async def send_member_change_emails(
     change_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("leitung")),
+    current_user: User = Depends(require_role("mitarbeiter")),
 ):
-    """Send emails for a draft member change. Leitung+ can send."""
+    """Send emails for a draft member change. Mitarbeiter+ can send."""
     change = db.query(MemberChange).filter(MemberChange.id == change_id).first()
     if not change:
         raise HTTPException(status_code=404, detail="Member change not found")
@@ -156,9 +170,9 @@ async def resend_member_change_emails(
     change_id: int,
     data: ResendEmailsRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("leitung")),
+    current_user: User = Depends(require_role("mitarbeiter")),
 ):
-    """E-Mails für diese Mitgliederänderung erneut senden. Auswahl: an Mitglied und/oder an KV. Leitung+."""
+    """E-Mails für diese Mitgliederänderung erneut senden. Auswahl: an Mitglied und/oder an KV. Mitarbeiter+."""
     change = db.query(MemberChange).filter(MemberChange.id == change_id).first()
     if not change:
         raise HTTPException(status_code=404, detail="Member change not found")
@@ -190,6 +204,8 @@ def _send_change_emails(
         "bemerkung": change.bemerkung or "",
         "scenario": change.scenario or "",
         "eintrittsdatum": change.created_at.strftime("%d.%m.%Y") if change.created_at else "",
+        "austrittsdatum": _format_date_for_template(getattr(change, "austrittsdatum", None)),
+        "wechseldatum": _format_date_for_template(getattr(change, "wechseldatum", None)),
     }
 
     # Resolve Kreisverband names

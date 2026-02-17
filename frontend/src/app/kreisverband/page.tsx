@@ -17,14 +17,14 @@ export default function KreisverbandPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!hasMinRole('vorstand')) return;
+    if (!hasMinRole('mitarbeiter')) return;
     getKreisverbande()
       .then(setList)
       .catch((e) => setError(getApiErrorMessage(e, 'Fehler beim Laden')))
       .finally(() => setLoading(false));
   }, [hasMinRole]);
 
-  if (!hasMinRole('vorstand')) return null;
+  if (!hasMinRole('mitarbeiter')) return null;
 
   if (loading) {
     return (

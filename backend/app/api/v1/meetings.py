@@ -37,9 +37,9 @@ async def list_meetings(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("vorstand")),
+    current_user: User = Depends(require_role("mitarbeiter")),
 ):
-    """List meetings. Vorstand+ can view."""
+    """List meetings. Mitarbeiter+ can view."""
     query = db.query(Meeting)
     if typ:
         query = query.filter(Meeting.typ == typ)
@@ -51,7 +51,7 @@ async def list_meetings(
 async def get_teilnehmer_optionen(
     variante: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("vorstand")),
+    current_user: User = Depends(require_role("mitarbeiter")),
 ):
     """Optionen für Dropdown 'Teilnehmer der Eingeladenen' je nach Einladungsvariante. Erweiterter LV = feste Namen + alle KV-Vorstandsmitglieder (pro Kreis z. B. Vorsitz oder Stellvertretung wählbar)."""
     v = variante.strip().lower()
@@ -66,9 +66,9 @@ async def get_teilnehmer_optionen(
 async def create_meeting(
     data: MeetingCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("vorstand")),
+    current_user: User = Depends(require_role("leitung")),
 ):
-    """Create a meeting. Vorstand+ can create."""
+    """Create a meeting. Leitung+ can create."""
     meeting = Meeting(
         titel=data.titel,
         titel_kurz=getattr(data, "titel_kurz", None),
@@ -98,9 +98,9 @@ async def create_meeting(
 async def get_meeting(
     meeting_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("vorstand")),
+    current_user: User = Depends(require_role("mitarbeiter")),
 ):
-    """Get a single meeting by ID."""
+    """Get a single meeting by ID. Mitarbeiter+ can view."""
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
@@ -112,9 +112,9 @@ async def update_meeting(
     meeting_id: int,
     data: MeetingUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("vorstand")),
+    current_user: User = Depends(require_role("mitarbeiter")),
 ):
-    """Update a meeting."""
+    """Update a meeting (z. B. Protokoll schreiben). Mitarbeiter+ can update."""
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
@@ -130,9 +130,9 @@ async def update_meeting(
 async def delete_meeting(
     meeting_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("vorstand")),
+    current_user: User = Depends(require_role("leitung")),
 ):
-    """Delete a meeting."""
+    """Delete a meeting. Leitung+ can delete."""
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
@@ -444,9 +444,9 @@ def _meeting_context(meeting: Meeting, for_protocol: bool = False, db: Optional[
 async def generate_invitation(
     meeting_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("vorstand")),
+    current_user: User = Depends(require_role("mitarbeiter")),
 ):
-    """Generate Einladung DOCX from template and optionally PDF. Returns file path in response."""
+    """Generate Einladung DOCX from template. Mitarbeiter+ can generate."""
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
@@ -481,9 +481,9 @@ async def generate_invitation(
 async def generate_protocol(
     meeting_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("vorstand")),
+    current_user: User = Depends(require_role("mitarbeiter")),
 ):
-    """Generate Protokoll DOCX from template."""
+    """Generate Protokoll DOCX from template. Mitarbeiter+ can generate (Protokolle schreiben)."""
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
@@ -517,9 +517,9 @@ async def generate_protocol(
 async def download_invitation_pdf(
     meeting_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("vorstand")),
+    current_user: User = Depends(require_role("mitarbeiter")),
 ):
-    """Einladung als PDF herunterladen (konvertiert aus vorhandenem DOCX)."""
+    """Einladung als PDF herunterladen. Mitarbeiter+ can download."""
     try:
         meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
         if not meeting or not meeting.einladung_pfad:
@@ -554,9 +554,9 @@ async def download_invitation_pdf(
 async def download_protocol_pdf(
     meeting_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("vorstand")),
+    current_user: User = Depends(require_role("mitarbeiter")),
 ):
-    """Protokoll als PDF herunterladen (konvertiert aus vorhandenem DOCX)."""
+    """Protokoll als PDF herunterladen. Mitarbeiter+ can download."""
     try:
         meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
         if not meeting or not meeting.protokoll_pfad:

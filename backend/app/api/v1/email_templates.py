@@ -46,6 +46,8 @@ def _sample_template_vars(scenario: str, typ: str) -> dict:
         "bemerkung": "Test-Bemerkung",
         "scenario": scenario,
         "eintrittsdatum": "17.02.2025",
+        "austrittsdatum": "01.03.2025",
+        "wechseldatum": "15.02.2025",
         "empfaenger_name": "Anna Vorsitz" if typ == "empfaenger" else "",
         "vorsitzender": "Anna Vorsitz",
         "schatzmeister": "Bernd Schatz",

@@ -24,7 +24,7 @@ export default function VerlaufPage() {
   const [resendLoading, setResendLoading] = useState(false);
 
   useEffect(() => {
-    if (!hasMinRole('vorstand')) return;
+    if (!hasMinRole('mitarbeiter')) return;
     getMemberChanges({ limit: 100 })
       .then(setList)
       .finally(() => setLoading(false));
@@ -59,7 +59,7 @@ export default function VerlaufPage() {
     }
   };
 
-  if (!hasMinRole('vorstand')) return null;
+  if (!hasMinRole('mitarbeiter')) return null;
 
   return (
     <div className="p-6">

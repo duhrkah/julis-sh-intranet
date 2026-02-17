@@ -7,13 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 export default function VerwaltungPage() {
   const { hasMinRole } = useAuth();
-  if (!hasMinRole('leitung')) return null;
+  if (!hasMinRole('admin')) return null;
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-semibold">Verwaltung</h1>
       <p className="mt-1 text-muted-foreground">
-        Benutzer, Stammdaten und Audit-Log (Leitung bzw. Admin).
+        Benutzer, Stammdaten und Audit-Log (nur Administrator).
       </p>
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         {hasMinRole('admin') && (
@@ -42,17 +42,19 @@ export default function VerwaltungPage() {
             </CardContent>
           </Card>
         )}
-        <Card>
-          <CardHeader>
-            <CardTitle>Stammdaten</CardTitle>
-            <CardDescription>System-Stammdaten pflegen</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild variant="outline">
-              <Link href="/verwaltung/stammdaten">Stammdaten</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        {hasMinRole('admin') && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Stammdaten</CardTitle>
+              <CardDescription>System-Stammdaten pflegen</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild variant="outline">
+                <Link href="/verwaltung/stammdaten">Stammdaten</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
         {hasMinRole('admin') && (
           <Card>
             <CardHeader>

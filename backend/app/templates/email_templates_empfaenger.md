@@ -51,8 +51,10 @@ folgendes Mitglied ist aus dem {kreis} ausgetreten:
 
 Name: {nachname}
 Vorname: {vorname}
-Kreisverband: {kreis}
+Geburtsdatum: {geburtsdatum}
 Mitgliedsnummer: {mitgliedsnummer}
+Austrittsdatum: {austrittsdatum}
+Kreisverband: {kreis}
 
 Solltest Du Fragen haben, melde dich gerne bei mir.
 
@@ -107,8 +109,10 @@ folgendes Mitglied hat den {kreis} im Rahmen eines Verbandswechsels verlassen:
 
 Name: {nachname}
 Vorname: {vorname}
-Ehemaliger Kreisverband: {kreisverband_alt}
+Geburtsdatum: {geburtsdatum}
 Mitgliedsnummer: {mitgliedsnummer}
+Austrittsdatum: {austrittsdatum}
+Ehemaliger Kreisverband: {kreisverband_alt}
 
 Solltest Du Fragen haben, melde dich gerne bei mir.
 
@@ -140,6 +144,7 @@ Ort: {ort}
 PLZ: {plz}
 E-Mail: {email}
 Mobil: {telefon}
+Wechseldatum: {wechseldatum}
 Ehemaliger Kreisverband: {kreisverband_alt}
 Neuer Kreisverband: {kreisverband_neu}
 Mitgliedsnummer: {mitgliedsnummer}
@@ -200,4 +205,6 @@ Deine Landesgeschäftsstelle
 | {strasse}, {hausnummer}, {ort}, {plz} | Adresse |
 | {email}, {telefon} | Kontakt |
 | {eintrittsdatum} | Datum der Meldung (bei Eintritt) |
+| {austrittsdatum} | Austrittsdatum (bei Austritt / Verbandswechsel Austritt) |
+| {wechseldatum} | Wechseldatum (bei Verbandswechsel intern) |
 | {bemerkung} | Optionale Bemerkung (z. B. bei Datenänderung) |

@@ -11,7 +11,7 @@ export default function MitgliederPage() {
   const { hasMinRole } = useAuth();
   const router = useRouter();
 
-  if (!hasMinRole('vorstand')) return null;
+  if (!hasMinRole('mitarbeiter')) return null;
 
   const canEdit = hasMinRole('leitung');
 

@@ -78,9 +78,9 @@ def _rollen_fuer_uebersicht(rolle: str, mit_beisitzern: bool) -> List[str]:
 async def list_kreisverbande(
     ist_aktiv: Optional[bool] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("vorstand")),
+    current_user: User = Depends(require_role("mitarbeiter")),
 ):
-    """List all Kreisverbande. Vorstand+ can view."""
+    """List all Kreisverbande. Mitarbeiter+ can view."""
     query = db.query(Kreisverband)
     if ist_aktiv is not None:
         query = query.filter(Kreisverband.ist_aktiv == ist_aktiv)
@@ -156,9 +156,9 @@ async def create_kreisverband(
 async def get_kreisverband(
     kv_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("vorstand")),
+    current_user: User = Depends(require_role("mitarbeiter")),
 ):
-    """Get a single Kreisverband with its Vorstandsmitglieder."""
+    """Get a single Kreisverband with its Vorstandsmitglieder. Mitarbeiter+ can view."""
     kv = db.query(Kreisverband).filter(Kreisverband.id == kv_id).first()
     if not kv:
         raise HTTPException(status_code=404, detail="Kreisverband not found")
@@ -224,9 +224,9 @@ async def list_vorstandsmitglieder(
     kv_id: int,
     ist_aktiv: Optional[bool] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("vorstand")),
+    current_user: User = Depends(require_role("mitarbeiter")),
 ):
-    """List Vorstandsmitglieder of a Kreisverband."""
+    """List Vorstandsmitglieder of a Kreisverband. Mitarbeiter+ can view."""
     kv = db.query(Kreisverband).filter(Kreisverband.id == kv_id).first()
     if not kv:
         raise HTTPException(status_code=404, detail="Kreisverband not found")
@@ -243,9 +243,9 @@ async def create_vorstandsmitglied(
     data: KVVorstandsmitgliedCreate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("leitung")),
+    current_user: User = Depends(require_role("vorstand")),
 ):
-    """Add a Vorstandsmitglied. Leitung+ can create."""
+    """Add a Vorstandsmitglied. Vorstand+ can create."""
     kv = db.query(Kreisverband).filter(Kreisverband.id == kv_id).first()
     if not kv:
         raise HTTPException(status_code=404, detail="Kreisverband not found")
@@ -272,9 +272,9 @@ async def update_vorstandsmitglied(
     mitglied_id: int,
     data: KVVorstandsmitgliedCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("leitung")),
+    current_user: User = Depends(require_role("vorstand")),
 ):
-    """Update a Vorstandsmitglied. Leitung+ can edit."""
+    """Update a Vorstandsmitglied. Vorstand+ can edit."""
     mitglied = db.query(KVVorstandsmitglied).filter(KVVorstandsmitglied.id == mitglied_id).first()
     if not mitglied:
         raise HTTPException(status_code=404, detail="Vorstandsmitglied not found")
@@ -295,9 +295,9 @@ async def update_vorstandsmitglied(
 async def delete_vorstandsmitglied(
     mitglied_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("leitung")),
+    current_user: User = Depends(require_role("vorstand")),
 ):
-    """Delete a Vorstandsmitglied. Leitung+ can delete."""
+    """Delete a Vorstandsmitglied. Vorstand+ can delete."""
     mitglied = db.query(KVVorstandsmitglied).filter(KVVorstandsmitglied.id == mitglied_id).first()
     if not mitglied:
         raise HTTPException(status_code=404, detail="Vorstandsmitglied not found")
@@ -316,9 +316,9 @@ async def list_protokolle(
     kv_id: int,
     typ: Optional[str] = Query(None, description="Filter by type"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("vorstand")),
+    current_user: User = Depends(require_role("mitarbeiter")),
 ):
-    """List Protokolle of a Kreisverband."""
+    """List Protokolle of a Kreisverband. Mitarbeiter+ can view."""
     kv = db.query(Kreisverband).filter(Kreisverband.id == kv_id).first()
     if not kv:
         raise HTTPException(status_code=404, detail="Kreisverband not found")
@@ -338,9 +338,9 @@ async def create_protokoll(
     beschreibung: Optional[str] = Form(None),
     datei: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("leitung")),
+    current_user: User = Depends(require_role("mitarbeiter")),
 ):
-    """Create a Protokoll with optional file upload. Leitung+ can create."""
+    """Create a Protokoll with optional file upload. Mitarbeiter+ can create."""
     kv = db.query(Kreisverband).filter(Kreisverband.id == kv_id).first()
     if not kv:
         raise HTTPException(status_code=404, detail="Kreisverband not found")
@@ -379,9 +379,9 @@ async def create_protokoll(
 async def delete_protokoll(
     protokoll_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("leitung")),
+    current_user: User = Depends(require_role("mitarbeiter")),
 ):
-    """Delete a Protokoll and its file. Leitung+ can delete."""
+    """Delete a Protokoll and its file. Mitarbeiter+ can delete."""
     protokoll = db.query(KVProtokoll).filter(KVProtokoll.id == protokoll_id).first()
     if not protokoll:
         raise HTTPException(status_code=404, detail="Protokoll not found")

@@ -175,7 +175,7 @@ export default function SitzungDetailPage() {
   }, [meeting?.tagesordnung]);
 
   useEffect(() => {
-    if (!hasMinRole('vorstand') || !id) return;
+    if (!hasMinRole('mitarbeiter') || !id) return;
     getMeetingById(id)
       .then(setMeeting)
       .catch((e) => setError(getApiErrorMessage(e, 'Fehler beim Laden')))
@@ -421,7 +421,7 @@ export default function SitzungDetailPage() {
     }
   };
 
-  if (!hasMinRole('vorstand')) return null;
+  if (!hasMinRole('mitarbeiter')) return null;
 
   if (loading) {
     return (

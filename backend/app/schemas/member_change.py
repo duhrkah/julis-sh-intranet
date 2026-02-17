@@ -16,6 +16,8 @@ class MemberChangeBase(BaseModel):
     plz: Optional[str] = None
     ort: Optional[str] = None
     geburtsdatum: Optional[str] = None
+    austrittsdatum: Optional[str] = None
+    wechseldatum: Optional[str] = None
     kreisverband_id: Optional[int] = None
     kreisverband_alt_id: Optional[int] = None
     kreisverband_neu_id: Optional[int] = None

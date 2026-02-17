@@ -53,10 +53,11 @@ export default function KreisverbandDetailPage() {
   const [protokollTyp, setProtokollTyp] = useState('Kreiskongress');
   const [protokollDatei, setProtokollDatei] = useState<File | null>(null);
 
-  const canEdit = hasMinRole('leitung');
+  const canEditVorstand = hasMinRole('vorstand');
+  const canAddProtokoll = hasMinRole('mitarbeiter');
 
   useEffect(() => {
-    if (!hasMinRole('vorstand') || !id) return;
+    if (!hasMinRole('mitarbeiter') || !id) return;
     Promise.all([
       getKreisverbandById(id),
       getVorstand(id),
@@ -152,7 +153,7 @@ export default function KreisverbandDetailPage() {
     return relative ? `${base}/uploads/${relative}` : null;
   };
 
-  if (!hasMinRole('vorstand')) return null;
+  if (!hasMinRole('mitarbeiter')) return null;
 
   if (loading) {
     return (
@@ -225,7 +226,7 @@ export default function KreisverbandDetailPage() {
       <Card className="mb-6">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-lg">Vorstand</CardTitle>
-          {canEdit && (
+          {canEditVorstand && (
             <Button
               size="sm"
               variant={showVorstandForm ? 'outline' : 'default'}
@@ -237,7 +238,7 @@ export default function KreisverbandDetailPage() {
           )}
         </CardHeader>
         <CardContent>
-          {showVorstandForm && canEdit && (
+          {showVorstandForm && canEditVorstand && (
             <form onSubmit={handleAddVorstand} className="mb-4 rounded-md border border-border bg-muted/30 p-4">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
@@ -292,7 +293,7 @@ export default function KreisverbandDetailPage() {
                     )}
                     <Badge variant="outline" className="ml-2 text-xs">{m.rolle}</Badge>
                   </div>
-                  {canEdit && (
+                  {canEditVorstand && (
                     <Button
                       type="button"
                       variant="ghost"
@@ -314,7 +315,7 @@ export default function KreisverbandDetailPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-lg">Protokolle</CardTitle>
-          {canEdit && (
+          {canAddProtokoll && (
             <Button
               size="sm"
               variant={showProtokollForm ? 'outline' : 'default'}
@@ -326,7 +327,7 @@ export default function KreisverbandDetailPage() {
           )}
         </CardHeader>
         <CardContent>
-          {showProtokollForm && canEdit && (
+          {showProtokollForm && canAddProtokoll && (
             <form onSubmit={handleUploadProtokoll} className="mb-4 rounded-md border border-border bg-muted/30 p-4">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
@@ -403,7 +404,7 @@ export default function KreisverbandDetailPage() {
                           PDF
                         </a>
                       )}
-                      {canEdit && (
+                      {canAddProtokoll && (
                         <Button
                           type="button"
                           variant="ghost"
