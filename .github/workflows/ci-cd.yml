@@ -145,7 +145,7 @@ jobs:
         run: python -c "from app.main import app; print('Import OK')"
         env:
           JWT_SECRET: ci-dummy-secret
-          DATABASE_URL: postgresql+asyncpg://ci:ci@localhost:5432/ci
+          DATABASE_URL: sqlite:///./data/ci-check.db
 
   backend-test:
     name: Backend Tests
