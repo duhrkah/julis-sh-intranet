@@ -1,8 +1,6 @@
 services:
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: duhrkah/intranet-backend:latest
     container_name: intranet-backend
     restart: unless-stopped
     environment:
@@ -38,13 +36,7 @@ services:
       start_period: 40s
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        - NEXT_PUBLIC_API_URL=https://intranet.julis-sh.de/api/v1
-        - NEXT_PUBLIC_APP_URL=https://intranet.julis-sh.de
-        - NEXT_PUBLIC_APP_ENV=production
+    image: duhrkah/intranet-frontend:latest
     container_name: intranet-frontend
     restart: unless-stopped
     depends_on:
