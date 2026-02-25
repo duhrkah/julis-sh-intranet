@@ -16,7 +16,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { ArrowLeft, MapPin, User, Mail } from 'lucide-react';
+import { ArrowLeft, MapPin, User, Mail, Paperclip } from 'lucide-react';
+import { getEventAttachmentUrl } from '@/lib/api/events';
 
 export default function KalenderAdminFreigabePage() {
   const { hasMinRole, loading: authLoading } = useAuth();
@@ -226,6 +227,31 @@ export default function KalenderAdminFreigabePage() {
                       </>
                     )}
                   </p>
+                )}
+                {event.attachments && event.attachments.length > 0 && (
+                  <div className="space-y-1">
+                    <p className="flex items-center gap-1 text-sm font-medium">
+                      <Paperclip className="h-4 w-4 shrink-0" />
+                      Anhänge ({event.attachments.length})
+                    </p>
+                    <ul className="ml-5 space-y-0.5">
+                      {event.attachments.map((att) => (
+                        <li key={att.id} className="text-sm">
+                          <a
+                            href={getEventAttachmentUrl(event.id, att.id)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            {att.original_name}
+                          </a>
+                          <span className="ml-1 text-muted-foreground">
+                            ({(att.file_size / 1024).toFixed(0)} KB)
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
                 {event.source_tenant_id != null && (
                   <p className="text-sm text-muted-foreground">

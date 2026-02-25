@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import listPlugin from '@fullcalendar/list';
@@ -8,6 +8,13 @@ import interactionPlugin from '@fullcalendar/interaction';
 import deLocale from '@fullcalendar/core/locales/de';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
+
+export interface CalendarEventAttachment {
+  id: number;
+  event_id: number;
+  original_name: string;
+  file_size: number;
+}
 
 export interface CalendarEventInput {
   id: number;
@@ -21,6 +28,7 @@ export interface CalendarEventInput {
   description?: string | null;
   organizer?: string | null;
   calendarType?: 'landesverband' | 'kreisverband';
+  attachments?: CalendarEventAttachment[];
 }
 
 /**
@@ -43,6 +51,7 @@ export interface FullCalendarWrapperProps {
   events: CalendarEventInput[];
   onEventClick?: (event: CalendarEventInput) => void;
   eventUrl?: (event: CalendarEventInput) => string;
+  attachmentUrl?: (eventId: number, attachmentId: number) => string;
   initialView?: 'dayGridMonth' | 'listMonth';
   initialDate?: string;
   height?: string | number;
@@ -54,6 +63,7 @@ export default function FullCalendarWrapper({
   events,
   onEventClick,
   eventUrl,
+  attachmentUrl,
   initialView = 'dayGridMonth',
   initialDate,
   height = 600,
@@ -63,6 +73,7 @@ export default function FullCalendarWrapper({
   const [calendarEvents, setCalendarEvents] = useState<Record<string, unknown>[]>([]);
   const [hoveredEvent, setHoveredEvent] = useState<CalendarEventInput | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const transformed = events.map((event) => {
@@ -105,6 +116,10 @@ export default function FullCalendarWrapper({
 
   const handleEventMouseEnter = useCallback(
     (info: { event: { extendedProps: Record<string, unknown> }; jsEvent: MouseEvent }) => {
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+        hideTimeoutRef.current = null;
+      }
       const ev = info.event.extendedProps.originalEvent as CalendarEventInput | undefined;
       if (ev) setHoveredEvent(ev);
       setTooltipPos({ x: info.jsEvent.clientX, y: info.jsEvent.clientY });
@@ -113,7 +128,24 @@ export default function FullCalendarWrapper({
   );
 
   const handleEventMouseLeave = useCallback(() => {
-    setHoveredEvent(null);
+    hideTimeoutRef.current = setTimeout(() => {
+      setHoveredEvent(null);
+      hideTimeoutRef.current = null;
+    }, 150);
+  }, []);
+
+  const handleTooltipMouseEnter = useCallback(() => {
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+  }, []);
+
+  const handleTooltipMouseLeave = useCallback(() => {
+    hideTimeoutRef.current = setTimeout(() => {
+      setHoveredEvent(null);
+      hideTimeoutRef.current = null;
+    }, 150);
   }, []);
 
   const headerToolbar =
@@ -158,11 +190,13 @@ export default function FullCalendarWrapper({
       {/* Hover-Tooltip mit Termin-Details */}
       {hoveredEvent && (
         <div
-          className="pointer-events-none fixed z-[100] max-w-sm rounded-lg border border-border bg-card p-3 text-sm shadow-lg"
+          className="fixed z-[100] max-w-sm rounded-lg border border-border bg-card p-3 text-sm shadow-lg"
           style={{
             left: Math.min(tooltipPos.x + 12, typeof window !== 'undefined' ? window.innerWidth - 320 : tooltipPos.x + 12),
             top: Math.min(tooltipPos.y + 8, typeof window !== 'undefined' ? window.innerHeight - 280 : tooltipPos.y + 8),
           }}
+          onMouseEnter={handleTooltipMouseEnter}
+          onMouseLeave={handleTooltipMouseLeave}
         >
           <div className="font-semibold text-foreground">{hoveredEvent.title}</div>
           <div className="mt-1 text-muted-foreground">
@@ -179,6 +213,26 @@ export default function FullCalendarWrapper({
           )}
           {hoveredEvent.description && (
             <p className="mt-2 line-clamp-3 text-muted-foreground">{hoveredEvent.description}</p>
+          )}
+          {hoveredEvent.attachments && hoveredEvent.attachments.length > 0 && (
+            <div className="mt-2 space-y-0.5">
+              <div className="font-medium text-foreground">📎 Anhänge</div>
+              {hoveredEvent.attachments.map((att) =>
+                attachmentUrl ? (
+                  <a
+                    key={att.id}
+                    href={attachmentUrl(hoveredEvent.id, att.id)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block text-primary hover:underline"
+                  >
+                    {att.original_name}
+                  </a>
+                ) : (
+                  <div key={att.id} className="text-muted-foreground">{att.original_name}</div>
+                )
+              )}
+            </div>
           )}
         </div>
       )}

@@ -1,6 +1,11 @@
 """Event CRUD endpoints"""
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
-from sqlalchemy.orm import Session
+import os
+import uuid
+
+import aiofiles
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request, UploadFile, File
+from fastapi.responses import FileResponse
+from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from datetime import date, datetime
 
@@ -11,13 +16,35 @@ from app.api.deps import (
     get_required_tenant_filter,
     is_tenant_landesverband,
 )
+from app.config import settings
 from app.core.rbac import require_role, has_min_role
 from app.models.event import Event
+from app.models.event_attachment import EventAttachment
 from app.models.user import User
-from app.schemas.event import EventCreate, EventUpdate, EventResponse
+from app.schemas.event import EventCreate, EventUpdate, EventResponse, EventAttachmentResponse
 from app.services.audit import log_action
 
 router = APIRouter()
+
+EVENT_ATTACHMENT_DIR = os.path.join(settings.UPLOAD_DIR, "event_attachments")
+ALLOWED_ATTACHMENT_EXTENSIONS = {".pdf", ".docx", ".doc", ".png", ".jpg", ".jpeg"}
+MAX_ATTACHMENT_SIZE = 20 * 1024 * 1024  # 20 MB
+
+
+def _validate_attachment(filename: str) -> str:
+    ext = os.path.splitext(filename)[1].lower() if filename else ""
+    if ext not in ALLOWED_ATTACHMENT_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Dateityp '{ext}' nicht erlaubt. Erlaubt: {', '.join(sorted(ALLOWED_ATTACHMENT_EXTENSIONS))}",
+        )
+    return ext
+
+
+def _safe_file_path(base_dir: str, file_path: str) -> bool:
+    real_base = os.path.realpath(base_dir)
+    real_path = os.path.realpath(file_path)
+    return real_path.startswith(real_base)
 
 
 @router.get("/", response_model=List[EventResponse])
@@ -36,7 +63,7 @@ async def list_events(
     if not tenant_ids:
         return []
 
-    query = db.query(Event).filter(Event.tenant_id.in_(tenant_ids))
+    query = db.query(Event).options(joinedload(Event.attachments)).filter(Event.tenant_id.in_(tenant_ids))
 
     if status_filter:
         if status_filter not in ("pending", "approved", "rejected"):
@@ -115,7 +142,7 @@ async def get_event(
     current_user: User = Depends(get_current_user),
 ):
     """Get a single event by ID."""
-    event = db.query(Event).filter(Event.id == event_id).first()
+    event = db.query(Event).options(joinedload(Event.attachments)).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
 
@@ -181,8 +208,127 @@ async def delete_event(
     if not is_submitter and not is_vorstand:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed to delete this event")
 
+    # Anhänge von Disk löschen
+    for att in event.attachments:
+        if att.file_path and os.path.exists(att.file_path) and _safe_file_path(EVENT_ATTACHMENT_DIR, att.file_path):
+            os.remove(att.file_path)
+
     event_title = event.title
     db.delete(event)
     log_action(db, current_user.id, "delete", "event", event_id, f"Event gelöscht: {event_title}", request)
+    db.commit()
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Event Attachments
+# ---------------------------------------------------------------------------
+
+
+@router.post("/{event_id}/attachments", response_model=EventAttachmentResponse, status_code=status.HTTP_201_CREATED)
+async def upload_event_attachment(
+    event_id: int,
+    datei: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Datei an Event anhängen. Nur Ersteller oder Vorstand+."""
+    event = db.query(Event).filter(Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    is_submitter = event.submitter_id == current_user.id
+    is_vorstand = has_min_role(current_user.role, "vorstand")
+    if not is_submitter and not is_vorstand:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed to add attachments")
+
+    os.makedirs(EVENT_ATTACHMENT_DIR, exist_ok=True)
+    ext = _validate_attachment(datei.filename)
+    content = await datei.read()
+    if len(content) > MAX_ATTACHMENT_SIZE:
+        raise HTTPException(status_code=400, detail=f"Datei zu groß. Maximum: {MAX_ATTACHMENT_SIZE // (1024 * 1024)} MB")
+
+    safe_filename = f"{uuid.uuid4().hex}{ext}"
+    file_path = os.path.join(EVENT_ATTACHMENT_DIR, safe_filename)
+
+    async with aiofiles.open(file_path, "wb") as f:
+        await f.write(content)
+
+    attachment = EventAttachment(
+        event_id=event_id,
+        original_name=datei.filename or safe_filename,
+        file_path=file_path,
+        file_size=len(content),
+        content_type=datei.content_type,
+    )
+    db.add(attachment)
+    db.commit()
+    db.refresh(attachment)
+    return attachment
+
+
+@router.get("/{event_id}/attachments/{attachment_id}")
+async def download_event_attachment(
+    event_id: int,
+    attachment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Anhang herunterladen. Zugriffsschutz über Tenant."""
+    event = db.query(Event).filter(Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    tenant_ids = get_tenant_filter(db, current_user, include_children=True)
+    if event.tenant_id not in tenant_ids:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No access to this event")
+
+    attachment = db.query(EventAttachment).filter(
+        EventAttachment.id == attachment_id,
+        EventAttachment.event_id == event_id,
+    ).first()
+    if not attachment:
+        raise HTTPException(status_code=404, detail="Attachment not found")
+
+    if not os.path.exists(attachment.file_path) or not _safe_file_path(EVENT_ATTACHMENT_DIR, attachment.file_path):
+        raise HTTPException(status_code=404, detail="File not found on disk")
+
+    return FileResponse(
+        path=attachment.file_path,
+        filename=attachment.original_name,
+        media_type=attachment.content_type or "application/octet-stream",
+    )
+
+
+@router.delete("/{event_id}/attachments/{attachment_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_event_attachment(
+    event_id: int,
+    attachment_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Anhang löschen. Nur Ersteller oder Vorstand+."""
+    event = db.query(Event).filter(Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    is_submitter = event.submitter_id == current_user.id
+    is_vorstand = has_min_role(current_user.role, "vorstand")
+    if not is_submitter and not is_vorstand:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed to delete attachments")
+
+    attachment = db.query(EventAttachment).filter(
+        EventAttachment.id == attachment_id,
+        EventAttachment.event_id == event_id,
+    ).first()
+    if not attachment:
+        raise HTTPException(status_code=404, detail="Attachment not found")
+
+    if attachment.file_path and os.path.exists(attachment.file_path) and _safe_file_path(EVENT_ATTACHMENT_DIR, attachment.file_path):
+        os.remove(attachment.file_path)
+
+    db.delete(attachment)
+    log_action(db, current_user.id, "delete", "event_attachment", attachment_id, f"Anhang gelöscht: {attachment.original_name}", request)
     db.commit()
     return None

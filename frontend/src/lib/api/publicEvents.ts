@@ -43,3 +43,23 @@ export async function submitPublicEvent(
   }
   return res.json();
 }
+
+export async function submitPublicEventWithAttachments(
+  data: PublicEventSubmitInput,
+  files: File[],
+): Promise<PublicEventResponse> {
+  const event = await submitPublicEvent(data);
+  for (const file of files) {
+    const formData = new FormData();
+    formData.append('datei', file);
+    const res = await fetch(`${API_BASE}/public/events/${event.id}/attachments`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      // Event wurde erstellt, Attachment-Upload fehlgeschlagen - nicht abbrechen
+      console.error(`Attachment upload failed for ${file.name}`);
+    }
+  }
+  return event;
+}

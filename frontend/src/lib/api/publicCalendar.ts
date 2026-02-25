@@ -18,6 +18,15 @@ export interface PublicCalendarsResponse {
   kreisverband: TenantPublicShort[];
 }
 
+export interface PublicEventAttachment {
+  id: number;
+  event_id: number;
+  original_name: string;
+  file_size: number;
+  content_type?: string | null;
+  created_at: string;
+}
+
 export interface PublicEvent {
   id: number;
   title: string;
@@ -30,6 +39,7 @@ export interface PublicEvent {
   location_url?: string | null;
   organizer?: string | null;
   category_id?: number | null;
+  attachments?: PublicEventAttachment[];
   [key: string]: unknown;
 }
 
@@ -86,4 +96,8 @@ export async function getPublicCalendars(): Promise<PublicCalendarsResponse> {
   const res = await fetch(`${API_BASE}/public/calendars`);
   if (!res.ok) throw new Error('Kalender-Infos konnten nicht geladen werden');
   return res.json();
+}
+
+export function getPublicEventAttachmentUrl(eventId: number, attachmentId: number): string {
+  return `${API_BASE}/public/events/${eventId}/attachments/${attachmentId}`;
 }

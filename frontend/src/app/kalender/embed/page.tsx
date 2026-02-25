@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import {
   getPublicCalendars,
   getPublicEvents,
+  getPublicEventAttachmentUrl,
   type PublicEvent,
   type CalendarType,
 } from '@/lib/api/publicCalendar';
@@ -164,6 +165,7 @@ export default function KalenderEmbedPage() {
             height={400}
             hideToolbar={false}
             showViewSwitcher
+            attachmentUrl={getPublicEventAttachmentUrl}
             events={filteredEvents.map((e) => ({
               id: e.id,
               title: e.title,
@@ -176,6 +178,7 @@ export default function KalenderEmbedPage() {
               description: e.description,
               organizer: e.organizer,
               calendarType: e.calendarType,
+              attachments: e.attachments?.map((a) => ({ id: a.id, event_id: a.event_id, original_name: a.original_name, file_size: a.file_size })),
             }))}
           />
         </>

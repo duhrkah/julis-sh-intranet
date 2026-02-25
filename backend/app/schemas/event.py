@@ -1,6 +1,6 @@
 """Event Pydantic schemas"""
 from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional
+from typing import Optional, List
 from datetime import date, time, datetime
 
 
@@ -55,6 +55,17 @@ class EventUpdate(BaseModel):
     is_public: Optional[bool] = None
 
 
+class EventAttachmentResponse(BaseModel):
+    id: int
+    event_id: int
+    original_name: str
+    file_size: int
+    content_type: Optional[str] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class EventResponse(EventBase):
     id: int
     status: str
@@ -69,5 +80,6 @@ class EventResponse(EventBase):
     source_tenant_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
+    attachments: List[EventAttachmentResponse] = []
 
     model_config = ConfigDict(from_attributes=True)

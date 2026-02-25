@@ -10,6 +10,7 @@ import {
   deleteEvent,
   approveEvent,
   rejectEvent,
+  getEventAttachmentUrl,
   type Event,
   type EventUpdateInput,
 } from '@/lib/api/events';
@@ -18,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Calendar, MapPin } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Paperclip } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -347,6 +348,31 @@ export default function KalenderEventPage() {
             )}
             {event.organizer && (
               <p className="mt-2 text-sm text-muted-foreground">Veranstalter: {event.organizer}</p>
+            )}
+            {event.attachments && event.attachments.length > 0 && (
+              <div className="mt-4 space-y-1">
+                <p className="flex items-center gap-1 text-sm font-medium">
+                  <Paperclip className="h-4 w-4 shrink-0" />
+                  Anhänge ({event.attachments.length})
+                </p>
+                <ul className="ml-5 space-y-0.5">
+                  {event.attachments.map((att) => (
+                    <li key={att.id} className="text-sm">
+                      <a
+                        href={getEventAttachmentUrl(event.id, att.id)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        {att.original_name}
+                      </a>
+                      <span className="ml-1 text-muted-foreground">
+                        ({(att.file_size / 1024).toFixed(0)} KB)
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
             {event.status === 'rejected' && event.rejection_reason && (
               <p className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">

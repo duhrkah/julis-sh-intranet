@@ -1,5 +1,14 @@
 import apiClient from './client';
 
+export interface EventAttachment {
+  id: number;
+  event_id: number;
+  original_name: string;
+  file_size: number;
+  content_type?: string | null;
+  created_at: string;
+}
+
 export interface Event {
   id: number;
   title: string;
@@ -24,6 +33,7 @@ export interface Event {
   is_public: boolean;
   created_at: string;
   updated_at: string;
+  attachments?: EventAttachment[];
 }
 
 export interface EventCreateInput {
@@ -103,4 +113,21 @@ export async function rejectEvent(id: number, reason: string): Promise<Event> {
 export async function getPendingEvents(): Promise<Event[]> {
   const response = await apiClient.get<Event[]>('/admin/events/pending');
   return response.data;
+}
+
+export async function uploadEventAttachment(eventId: number, file: File): Promise<EventAttachment> {
+  const formData = new FormData();
+  formData.append('datei', file);
+  const response = await apiClient.post<EventAttachment>(`/events/${eventId}/attachments`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+}
+
+export async function deleteEventAttachment(eventId: number, attachmentId: number): Promise<void> {
+  await apiClient.delete(`/events/${eventId}/attachments/${attachmentId}`);
+}
+
+export function getEventAttachmentUrl(eventId: number, attachmentId: number): string {
+  return `${apiClient.defaults.baseURL}/events/${eventId}/attachments/${attachmentId}`;
 }

@@ -48,3 +48,4 @@ class Event(Base):
     submitter = relationship("User", back_populates="submitted_events", foreign_keys=[submitter_id])
     approver = relationship("User", back_populates="approved_events", foreign_keys=[approved_by])
     category = relationship("Category", back_populates="events")
+    attachments = relationship("EventAttachment", back_populates="event", cascade="all, delete-orphan")

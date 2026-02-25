@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { getEvents } from '@/lib/api/events';
+import { getEvents, getEventAttachmentUrl } from '@/lib/api/events';
 import { getTenantTree } from '@/lib/api/tenants';
 import { getApiErrorMessage } from '@/lib/apiError';
 import type { Event } from '@/lib/api/events';
@@ -239,6 +239,7 @@ export default function KalenderPage() {
           initialDate={`${filterMonth}-01`}
           height={600}
           showViewSwitcher
+          attachmentUrl={getEventAttachmentUrl}
           events={filteredEvents.map((e) => ({
             id: e.id,
             title: e.title,
@@ -251,6 +252,7 @@ export default function KalenderPage() {
             description: e.description,
             organizer: e.organizer,
             calendarType: e.calendarType,
+            attachments: e.attachments?.map((a) => ({ id: a.id, event_id: a.event_id, original_name: a.original_name, file_size: a.file_size })),
           }))}
           eventUrl={(ev) => `/kalender/${ev.id}`}
         />

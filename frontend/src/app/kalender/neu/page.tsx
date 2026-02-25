@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { createEvent } from '@/lib/api/events';
+import { createEvent, uploadEventAttachment } from '@/lib/api/events';
 import { getTenantTree } from '@/lib/api/tenants';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { formatKreisverbandDisplayName } from '@/lib/formatKreisverband';
@@ -40,6 +40,7 @@ export default function KalenderNeuPage() {
   const [locationUrl, setLocationUrl] = useState('');
   const [organizer, setOrganizer] = useState('');
   const [isPublic, setIsPublic] = useState(true);
+  const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,7 +95,7 @@ export default function KalenderNeuPage() {
     setError(null);
     setLoading(true);
     try {
-      await createEvent({
+      const event = await createEvent({
         title: title.trim(),
         description: description.trim() || undefined,
         start_date: startDate,
@@ -107,6 +108,9 @@ export default function KalenderNeuPage() {
         is_public: isPublic,
         target_tenant_id: tenantId ?? undefined,
       });
+      for (const file of files) {
+        await uploadEventAttachment(event.id, file);
+      }
       router.push('/kalender');
     } catch (err: unknown) {
       setError(getApiErrorMessage(err, 'Fehler beim Speichern'));
@@ -291,6 +295,26 @@ export default function KalenderNeuPage() {
               <label htmlFor="is_public" className="text-sm">
                 Öffentlich anzeigen
               </label>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Anhänge</label>
+              <input
+                type="file"
+                multiple
+                accept=".pdf,.docx,.doc,.png,.jpg,.jpeg"
+                onChange={(e) => setFiles(Array.from(e.target.files || []))}
+                className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary-foreground hover:file:bg-primary/90"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Erlaubt: PDF, DOCX, DOC, PNG, JPG. Max. 20 MB pro Datei.
+              </p>
+              {files.length > 0 && (
+                <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+                  {files.map((f, i) => (
+                    <li key={i}>{f.name} ({(f.size / 1024).toFixed(0)} KB)</li>
+                  ))}
+                </ul>
+              )}
             </div>
             <Button type="submit" disabled={loading}>
               {loading ? 'Speichern …' : 'Event anlegen'}

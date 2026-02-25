@@ -1,7 +1,11 @@
 """Public endpoints for the calendar (no authentication required)"""
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.responses import Response
-from sqlalchemy.orm import Session
+import os
+import uuid
+
+import aiofiles
+from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
+from fastapi.responses import Response, FileResponse
+from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from datetime import date
 
@@ -14,10 +18,11 @@ from app.api.deps import (
 )
 from app.config import settings
 from app.models.event import Event
+from app.models.event_attachment import EventAttachment
 from app.models.category import Category
 from app.models.user import User
 from app.models.tenant import Tenant
-from app.schemas.event import EventResponse, EventPublicCreate
+from app.schemas.event import EventResponse, EventPublicCreate, EventAttachmentResponse
 from app.schemas.category import CategoryPublic
 from pydantic import BaseModel
 
@@ -34,6 +39,26 @@ class PublicCalendarsResponse(BaseModel):
 
 
 router = APIRouter()
+
+EVENT_ATTACHMENT_DIR = os.path.join(settings.UPLOAD_DIR, "event_attachments")
+ALLOWED_ATTACHMENT_EXTENSIONS = {".pdf", ".docx", ".doc", ".png", ".jpg", ".jpeg"}
+MAX_ATTACHMENT_SIZE = 20 * 1024 * 1024  # 20 MB
+
+
+def _validate_attachment(filename: str) -> str:
+    ext = os.path.splitext(filename)[1].lower() if filename else ""
+    if ext not in ALLOWED_ATTACHMENT_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Dateityp '{ext}' nicht erlaubt. Erlaubt: {', '.join(sorted(ALLOWED_ATTACHMENT_EXTENSIONS))}",
+        )
+    return ext
+
+
+def _safe_file_path(base_dir: str, file_path: str) -> bool:
+    real_base = os.path.realpath(base_dir)
+    real_path = os.path.realpath(file_path)
+    return real_path.startswith(real_base)
 
 
 @router.get("/calendars", response_model=PublicCalendarsResponse)
@@ -79,7 +104,7 @@ async def list_public_events(
         tenant_ids = get_public_calendar_tenant_ids(db, calendar)
     if not tenant_ids:
         return []
-    query = db.query(Event).filter(
+    query = db.query(Event).options(joinedload(Event.attachments)).filter(
         Event.status == "approved",
         Event.is_public == True,
         Event.tenant_id.in_(tenant_ids),
@@ -102,7 +127,7 @@ async def get_public_event(
     db: Session = Depends(get_db),
 ):
     """Get a single event by ID if it is approved and public."""
-    event = db.query(Event).filter(Event.id == event_id).first()
+    event = db.query(Event).options(joinedload(Event.attachments)).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
 
@@ -190,6 +215,75 @@ async def submit_public_event(
     db.commit()
     db.refresh(event)
     return event
+
+
+@router.post("/events/{event_id}/attachments", response_model=EventAttachmentResponse, status_code=status.HTTP_201_CREATED)
+async def upload_public_event_attachment(
+    event_id: int,
+    datei: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    """Anhang an ein gerade eingereichtes Event hängen (public, kein Login).
+    Nur möglich wenn das Event status=pending hat (frisch eingereicht)."""
+    event = db.query(Event).filter(Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    if event.status != "pending":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Anhänge können nur an ausstehende Events angehängt werden")
+
+    os.makedirs(EVENT_ATTACHMENT_DIR, exist_ok=True)
+    ext = _validate_attachment(datei.filename)
+    content = await datei.read()
+    if len(content) > MAX_ATTACHMENT_SIZE:
+        raise HTTPException(status_code=400, detail=f"Datei zu groß. Maximum: {MAX_ATTACHMENT_SIZE // (1024 * 1024)} MB")
+
+    safe_filename = f"{uuid.uuid4().hex}{ext}"
+    file_path = os.path.join(EVENT_ATTACHMENT_DIR, safe_filename)
+
+    async with aiofiles.open(file_path, "wb") as f:
+        await f.write(content)
+
+    attachment = EventAttachment(
+        event_id=event_id,
+        original_name=datei.filename or safe_filename,
+        file_path=file_path,
+        file_size=len(content),
+        content_type=datei.content_type,
+    )
+    db.add(attachment)
+    db.commit()
+    db.refresh(attachment)
+    return attachment
+
+
+@router.get("/events/{event_id}/attachments/{attachment_id}")
+async def download_public_event_attachment(
+    event_id: int,
+    attachment_id: int,
+    db: Session = Depends(get_db),
+):
+    """Anhang eines öffentlichen, freigegebenen Events herunterladen."""
+    event = db.query(Event).filter(Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    if event.status != "approved" or not event.is_public:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    attachment = db.query(EventAttachment).filter(
+        EventAttachment.id == attachment_id,
+        EventAttachment.event_id == event_id,
+    ).first()
+    if not attachment:
+        raise HTTPException(status_code=404, detail="Attachment not found")
+
+    if not os.path.exists(attachment.file_path) or not _safe_file_path(EVENT_ATTACHMENT_DIR, attachment.file_path):
+        raise HTTPException(status_code=404, detail="File not found on disk")
+
+    return FileResponse(
+        path=attachment.file_path,
+        filename=attachment.original_name,
+        media_type=attachment.content_type or "application/octet-stream",
+    )
 
 
 @router.get("/categories", response_model=List[CategoryPublic])

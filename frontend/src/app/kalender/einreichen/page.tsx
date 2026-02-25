@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { submitPublicEvent } from '@/lib/api/publicEvents';
+import { submitPublicEventWithAttachments } from '@/lib/api/publicEvents';
 import { getPublicCalendars } from '@/lib/api/publicCalendar';
 import { formatKreisverbandDisplayName } from '@/lib/formatKreisverband';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ export default function KalenderEinreichenPage() {
   const [organizer, setOrganizer] = useState('');
   const [submitterName, setSubmitterName] = useState('');
   const [submitterEmail, setSubmitterEmail] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -48,7 +49,7 @@ export default function KalenderEinreichenPage() {
     setError(null);
     setLoading(true);
     try {
-      await submitPublicEvent({
+      await submitPublicEventWithAttachments({
         title: title.trim(),
         description: description.trim() || undefined,
         start_date: startDate,
@@ -61,7 +62,7 @@ export default function KalenderEinreichenPage() {
         submitter_name: submitterName.trim(),
         submitter_email: submitterEmail.trim(),
         tenant_id: tid ?? undefined,
-      });
+      }, files);
       setSuccess(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Einreichung fehlgeschlagen');
@@ -231,6 +232,26 @@ export default function KalenderEinreichenPage() {
                   required
                 />
               </div>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Anhänge</label>
+              <input
+                type="file"
+                multiple
+                accept=".pdf,.docx,.doc,.png,.jpg,.jpeg"
+                onChange={(e) => setFiles(Array.from(e.target.files || []))}
+                className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary-foreground hover:file:bg-primary/90"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Erlaubt: PDF, DOCX, DOC, PNG, JPG. Max. 20 MB pro Datei.
+              </p>
+              {files.length > 0 && (
+                <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+                  {files.map((f, i) => (
+                    <li key={i}>{f.name} ({(f.size / 1024).toFixed(0)} KB)</li>
+                  ))}
+                </ul>
+              )}
             </div>
             <div className="flex flex-col sm:flex-row gap-2 pt-2">
               <Button

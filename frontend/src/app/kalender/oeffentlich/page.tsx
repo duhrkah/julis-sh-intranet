@@ -6,6 +6,7 @@ import {
   getPublicCalendars,
   getPublicEvents,
   getPublicCategories,
+  getPublicEventAttachmentUrl,
   type PublicEvent,
   type PublicCategory,
   type CalendarType,
@@ -13,7 +14,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import FullCalendarWrapper from '@/components/calendar/FullCalendarWrapper';
-import { Calendar, MapPin, ExternalLink, CalendarDays, List } from 'lucide-react';
+import { Calendar, MapPin, ExternalLink, CalendarDays, List, Paperclip } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 
@@ -271,6 +272,7 @@ export default function KalenderOeffentlichPage() {
             initialDate={`${filterMonth}-01`}
             height={600}
             showViewSwitcher
+            attachmentUrl={getPublicEventAttachmentUrl}
             events={filteredEvents.map((e) => ({
               id: e.id,
               title: e.title,
@@ -283,6 +285,7 @@ export default function KalenderOeffentlichPage() {
               description: e.description,
               organizer: e.organizer,
               calendarType: e.calendarType,
+              attachments: e.attachments?.map((a) => ({ id: a.id, event_id: a.event_id, original_name: a.original_name, file_size: a.file_size })),
             }))}
           />
         ) : (
@@ -327,6 +330,31 @@ export default function KalenderOeffentlichPage() {
                       <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
                         {event.description}
                       </p>
+                    )}
+                    {event.attachments && event.attachments.length > 0 && (
+                      <div className="mt-2 space-y-0.5">
+                        <p className="flex items-center gap-1 text-sm font-medium">
+                          <Paperclip className="h-3.5 w-3.5 shrink-0" />
+                          Anhänge
+                        </p>
+                        <ul className="ml-5 space-y-0.5">
+                          {event.attachments.map((att) => (
+                            <li key={att.id} className="text-sm">
+                              <a
+                                href={getPublicEventAttachmentUrl(event.id, att.id)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline"
+                              >
+                                {att.original_name}
+                              </a>
+                              <span className="ml-1 text-muted-foreground">
+                                ({(att.file_size / 1024).toFixed(0)} KB)
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
                   </CardContent>
                 </Card>

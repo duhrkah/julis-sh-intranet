@@ -11,10 +11,12 @@ from app.models.document import Document
 from app.models.document_aenderungsantrag import DocumentAenderungsantrag as DocumentAmendment
 from app.models.document_aenderung import DocumentAenderung
 from app.models.meeting import Meeting
+from app.models.event_attachment import EventAttachment
 
 __all__ = [
     "User", "Tenant", "Event", "Category", "AuditLog",
     "Kreisverband", "KVVorstandsmitglied", "KVProtokoll",
     "MemberChange", "EmailTemplate", "EmailRecipient",
     "Document", "DocumentAmendment", "DocumentAenderung", "Meeting",
+    "EventAttachment",
 ]
