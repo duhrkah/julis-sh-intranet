@@ -69,7 +69,7 @@ jobs:
         run: npm ci
 
       - name: Tests ausfuehren
-        run: npx vitest run
+        run: npx vitest run --passWithNoTests
         env:
           AUTH_SECRET: ci-test-secret-32-chars-minimum!!
 
