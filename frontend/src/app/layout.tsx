@@ -50,6 +50,8 @@ export default function RootLayout({
     <html lang="de" className={anybody.variable} suppressHydrationWarning>
       <head>
         <ThemeScript />
+        {/* figma-capture-script */}
+        <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
       </head>
       <body className="min-h-screen bg-background font-sans antialiased">
         <ThemeProvider>

@@ -81,7 +81,7 @@ export default function KalenderEventPage() {
   }, [id, hasMinRole]);
 
   const canEdit = event && (event.submitter_id === user?.id || hasMinRole('vorstand'));
-  const canDelete = event && (event.submitter_id === user?.id || isAdmin);
+  const canDelete = event && (event.submitter_id === user?.id || hasMinRole('vorstand'));
   const canApproveReject = event && event.status === 'pending' && hasMinRole('vorstand');
 
   const handleSave = async () => {
