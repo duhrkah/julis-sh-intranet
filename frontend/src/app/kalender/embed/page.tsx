@@ -10,6 +10,8 @@ import {
   type CalendarType,
 } from '@/lib/api/publicCalendar';
 import FullCalendarWrapper from '@/components/calendar/FullCalendarWrapper';
+import type { CalendarEventInput } from '@/components/calendar/FullCalendarWrapper';
+import EventDetailDialog from '@/components/calendar/EventDetailDialog';
 
 type CalendarFilter = 'all' | CalendarType;
 
@@ -38,6 +40,7 @@ export default function KalenderEmbedPage() {
   } | null>(null);
   const [allEvents, setAllEvents] = useState<EventWithCalendar[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEventInput | null>(null);
 
   const { start_date, end_date, initialDate, initialFilter } = useMemo(() => {
     const month = searchParams.get('month');
@@ -166,6 +169,7 @@ export default function KalenderEmbedPage() {
             hideToolbar={false}
             showViewSwitcher
             attachmentUrl={getPublicEventAttachmentUrl}
+            onEventClick={(ev) => setSelectedEvent(ev)}
             events={filteredEvents.map((e) => ({
               id: e.id,
               title: e.title,
@@ -180,6 +184,13 @@ export default function KalenderEmbedPage() {
               calendarType: e.calendarType,
               attachments: e.attachments?.map((a) => ({ id: a.id, event_id: a.event_id, original_name: a.original_name, file_size: a.file_size })),
             }))}
+          />
+
+          <EventDetailDialog
+            event={selectedEvent}
+            open={selectedEvent !== null}
+            onOpenChange={(open) => { if (!open) setSelectedEvent(null); }}
+            attachmentUrl={getPublicEventAttachmentUrl}
           />
         </>
       )}

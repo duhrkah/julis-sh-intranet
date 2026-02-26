@@ -14,6 +14,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import FullCalendarWrapper from '@/components/calendar/FullCalendarWrapper';
+import type { CalendarEventInput } from '@/components/calendar/FullCalendarWrapper';
+import EventDetailDialog from '@/components/calendar/EventDetailDialog';
 import { Calendar, MapPin, ExternalLink, CalendarDays, List, Paperclip } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -64,6 +66,7 @@ export default function KalenderOeffentlichPage() {
     return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}`;
   });
   const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEventInput | null>(null);
 
   useEffect(() => {
     getPublicCalendars()
@@ -273,6 +276,7 @@ export default function KalenderOeffentlichPage() {
             height={600}
             showViewSwitcher
             attachmentUrl={getPublicEventAttachmentUrl}
+            onEventClick={(ev) => setSelectedEvent(ev)}
             events={filteredEvents.map((e) => ({
               id: e.id,
               title: e.title,
@@ -295,7 +299,21 @@ export default function KalenderOeffentlichPage() {
               return (
                 <Card
                   key={event.id}
-                  className={`transition-colors hover:border-primary/30 ${style.border}`}
+                  className={`cursor-pointer transition-colors hover:border-primary/30 ${style.border}`}
+                  onClick={() => setSelectedEvent({
+                    id: event.id,
+                    title: event.title,
+                    start_date: event.start_date,
+                    start_time: event.start_time,
+                    end_date: event.end_date,
+                    end_time: event.end_time,
+                    location: event.location,
+                    location_url: event.location_url,
+                    description: event.description,
+                    organizer: event.organizer,
+                    calendarType: event.calendarType,
+                    attachments: event.attachments?.map((a) => ({ id: a.id, event_id: a.event_id, original_name: a.original_name, file_size: a.file_size })),
+                  })}
                 >
                   <CardHeader className="pb-2">
                     <div className="flex flex-wrap items-center gap-2">
@@ -363,6 +381,13 @@ export default function KalenderOeffentlichPage() {
           </div>
         )}
       </div>
+
+      <EventDetailDialog
+        event={selectedEvent}
+        open={selectedEvent !== null}
+        onOpenChange={(open) => { if (!open) setSelectedEvent(null); }}
+        attachmentUrl={getPublicEventAttachmentUrl}
+      />
     </div>
   );
 }
