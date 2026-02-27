@@ -21,7 +21,7 @@ from app.core.rbac import require_role, has_min_role
 from app.models.event import Event
 from app.models.event_attachment import EventAttachment
 from app.models.user import User
-from app.schemas.event import EventCreate, EventUpdate, EventResponse, EventAttachmentResponse
+from app.schemas.event import EventCreate, EventUpdate, EventResponse, EventAttachmentResponse, EventAttachmentRename
 from app.services.audit import log_action
 
 router = APIRouter()
@@ -298,6 +298,39 @@ async def download_event_attachment(
         filename=attachment.original_name,
         media_type=attachment.content_type or "application/octet-stream",
     )
+
+
+@router.patch("/{event_id}/attachments/{attachment_id}", response_model=EventAttachmentResponse)
+async def rename_event_attachment(
+    event_id: int,
+    attachment_id: int,
+    data: EventAttachmentRename,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Anhang umbenennen. Nur Ersteller oder Vorstand+."""
+    event = db.query(Event).filter(Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    is_submitter = event.submitter_id == current_user.id
+    is_vorstand = has_min_role(current_user.role, "vorstand")
+    if not is_submitter and not is_vorstand:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed to rename attachments")
+
+    attachment = db.query(EventAttachment).filter(
+        EventAttachment.id == attachment_id,
+        EventAttachment.event_id == event_id,
+    ).first()
+    if not attachment:
+        raise HTTPException(status_code=404, detail="Attachment not found")
+
+    attachment.original_name = data.original_name
+    log_action(db, current_user.id, "update", "event_attachment", attachment_id, f"Anhang umbenannt: {data.original_name}", request)
+    db.commit()
+    db.refresh(attachment)
+    return attachment
 
 
 @router.delete("/{event_id}/attachments/{attachment_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { getEvents, getEventAttachmentUrl } from '@/lib/api/events';
+import { getEvents } from '@/lib/api/events';
 import { getTenantTree } from '@/lib/api/tenants';
 import { getApiErrorMessage } from '@/lib/apiError';
 import type { Event } from '@/lib/api/events';
@@ -239,7 +239,6 @@ export default function KalenderPage() {
           initialDate={`${filterMonth}-01`}
           height={600}
           showViewSwitcher
-          attachmentUrl={getEventAttachmentUrl}
           events={filteredEvents.map((e) => ({
             id: e.id,
             title: e.title,

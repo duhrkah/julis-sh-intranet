@@ -12,7 +12,8 @@ import {
   rejectEvent,
   uploadEventAttachment,
   deleteEventAttachment,
-  getEventAttachmentUrl,
+  renameEventAttachment,
+  downloadEventAttachment,
   type Event,
   type EventAttachment,
   type EventUpdateInput,
@@ -22,7 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Calendar, MapPin, Paperclip, X } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Paperclip, X, Pencil, Download, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -65,6 +66,8 @@ export default function KalenderEventPage() {
   const [editIsPublic, setEditIsPublic] = useState(true);
   const [newFiles, setNewFiles] = useState<File[]>([]);
   const [deletedAttachmentIds, setDeletedAttachmentIds] = useState<number[]>([]);
+  const [renamingAttachmentId, setRenamingAttachmentId] = useState<number | null>(null);
+  const [renameValue, setRenameValue] = useState('');
 
   useEffect(() => {
     if (!hasMinRole('mitarbeiter') || !id) return;
@@ -170,6 +173,19 @@ export default function KalenderEventPage() {
       setError(getApiErrorMessage(e, 'Fehler'));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleRename = async (attId: number) => {
+    if (!event || !renameValue.trim()) return;
+    try {
+      await renameEventAttachment(event.id, attId, renameValue.trim());
+      const refreshed = await getEventById(event.id);
+      setEvent(refreshed);
+      setRenamingAttachmentId(null);
+      setRenameValue('');
+    } catch (e: unknown) {
+      setError(getApiErrorMessage(e, 'Fehler beim Umbenennen'));
     }
   };
 
@@ -330,22 +346,51 @@ export default function KalenderEventPage() {
             <div>
               <label className="mb-1 block text-sm font-medium">Anhänge</label>
               {event.attachments && event.attachments.length > 0 && (
-                <ul className="mb-2 space-y-1">
+                <ul className="mb-2 space-y-1.5">
                   {event.attachments
                     .filter((att) => !deletedAttachmentIds.includes(att.id))
                     .map((att) => (
-                      <li key={att.id} className="flex items-center gap-2 text-sm">
-                        <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                        <span>{att.original_name}</span>
-                        <span className="text-muted-foreground">({(att.file_size / 1024).toFixed(0)} KB)</span>
-                        <button
-                          type="button"
-                          onClick={() => setDeletedAttachmentIds((prev) => [...prev, att.id])}
-                          className="ml-1 rounded p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                          title="Anhang entfernen"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
+                      <li key={att.id} className="text-sm">
+                        {renamingAttachmentId === att.id ? (
+                          <div className="flex items-center gap-2">
+                            <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                            <Input
+                              value={renameValue}
+                              onChange={(e) => setRenameValue(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') handleRename(att.id); if (e.key === 'Escape') setRenamingAttachmentId(null); }}
+                              className="h-7 text-sm"
+                              autoFocus
+                            />
+                            <button type="button" onClick={() => handleRename(att.id)} className="rounded p-0.5 text-muted-foreground hover:text-primary" title="Speichern">
+                              <Check className="h-3.5 w-3.5" />
+                            </button>
+                            <button type="button" onClick={() => setRenamingAttachmentId(null)} className="rounded p-0.5 text-muted-foreground hover:text-destructive" title="Abbrechen">
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                            <span>{att.original_name}</span>
+                            <span className="text-muted-foreground">({(att.file_size / 1024).toFixed(0)} KB)</span>
+                            <button
+                              type="button"
+                              onClick={() => { setRenamingAttachmentId(att.id); setRenameValue(att.original_name); }}
+                              className="rounded p-0.5 text-muted-foreground hover:text-primary"
+                              title="Umbenennen"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeletedAttachmentIds((prev) => [...prev, att.id])}
+                              className="rounded p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                              title="Anhang entfernen"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        )}
                       </li>
                     ))}
                 </ul>
@@ -422,20 +467,49 @@ export default function KalenderEventPage() {
                   <Paperclip className="h-4 w-4 shrink-0" />
                   Anhänge ({event.attachments.length})
                 </p>
-                <ul className="ml-5 space-y-0.5">
+                <ul className="ml-5 space-y-1">
                   {event.attachments.map((att) => (
                     <li key={att.id} className="text-sm">
-                      <a
-                        href={getEventAttachmentUrl(event.id, att.id)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        {att.original_name}
-                      </a>
-                      <span className="ml-1 text-muted-foreground">
-                        ({(att.file_size / 1024).toFixed(0)} KB)
-                      </span>
+                      {renamingAttachmentId === att.id ? (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleRename(att.id); if (e.key === 'Escape') setRenamingAttachmentId(null); }}
+                            className="h-7 w-64 text-sm"
+                            autoFocus
+                          />
+                          <button type="button" onClick={() => handleRename(att.id)} className="rounded p-0.5 text-muted-foreground hover:text-primary" title="Speichern">
+                            <Check className="h-3.5 w-3.5" />
+                          </button>
+                          <button type="button" onClick={() => setRenamingAttachmentId(null)} className="rounded p-0.5 text-muted-foreground hover:text-destructive" title="Abbrechen">
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => downloadEventAttachment(event.id, att.id, att.original_name)}
+                            className="text-primary hover:underline"
+                          >
+                            {att.original_name}
+                          </button>
+                          <span className="text-muted-foreground">
+                            ({(att.file_size / 1024).toFixed(0)} KB)
+                          </span>
+                          {canEdit && (
+                            <button
+                              type="button"
+                              onClick={() => { setRenamingAttachmentId(att.id); setRenameValue(att.original_name); }}
+                              className="rounded p-0.5 text-muted-foreground hover:text-primary"
+                              title="Umbenennen"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </span>
+                      )}
                     </li>
                   ))}
                 </ul>

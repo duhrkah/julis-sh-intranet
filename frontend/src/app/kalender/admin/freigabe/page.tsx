@@ -8,6 +8,7 @@ import {
   getPendingEvents,
   approveEvent,
   rejectEvent,
+  downloadEventAttachment,
   type Event,
 } from '@/lib/api/events';
 import { getApiErrorMessage } from '@/lib/apiError';
@@ -17,7 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { ArrowLeft, MapPin, User, Mail, Paperclip } from 'lucide-react';
-import { getEventAttachmentUrl } from '@/lib/api/events';
+
 
 export default function KalenderAdminFreigabePage() {
   const { hasMinRole, loading: authLoading } = useAuth();
@@ -237,14 +238,13 @@ export default function KalenderAdminFreigabePage() {
                     <ul className="ml-5 space-y-0.5">
                       {event.attachments.map((att) => (
                         <li key={att.id} className="text-sm">
-                          <a
-                            href={getEventAttachmentUrl(event.id, att.id)}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <button
+                            type="button"
+                            onClick={() => downloadEventAttachment(event.id, att.id, att.original_name)}
                             className="text-primary hover:underline"
                           >
                             {att.original_name}
-                          </a>
+                          </button>
                           <span className="ml-1 text-muted-foreground">
                             ({(att.file_size / 1024).toFixed(0)} KB)
                           </span>

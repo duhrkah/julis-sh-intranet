@@ -1,10 +1,13 @@
 """Settings/Admin endpoints (SMTP test, etc.) – nur Admin."""
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
+from sqlalchemy.orm import Session
 
+from app.api.deps import get_db, get_current_user
 from app.config import settings
 from app.core.rbac import require_role
 from app.models.user import User
+from app.models.app_setting import AppSetting
 from app.services.email import send_email
 
 router = APIRouter()
@@ -43,3 +46,45 @@ async def test_smtp(
             detail="E-Mail konnte nicht gesendet werden. Bitte SMTP-Einstellungen und Logs prüfen.",
         )
     return {"detail": f"Test-E-Mail wurde an {data.to} gesendet."}
+
+
+# --- App Version ---
+
+class VersionResponse(BaseModel):
+    version: str
+
+
+class VersionUpdateRequest(BaseModel):
+    version: str
+
+
+def _get_app_version(db: Session) -> str:
+    setting = db.query(AppSetting).filter(AppSetting.key == "app_version").first()
+    return setting.value if setting else "0.0.0"
+
+
+@router.get("/version", response_model=VersionResponse)
+async def get_version(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Aktuelle App-Version abrufen. Für alle authentifizierten Benutzer."""
+    return VersionResponse(version=_get_app_version(db))
+
+
+@router.put("/version", response_model=VersionResponse)
+async def update_version(
+    data: VersionUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin")),
+):
+    """App-Version setzen. Nur Admin."""
+    setting = db.query(AppSetting).filter(AppSetting.key == "app_version").first()
+    if setting:
+        setting.value = data.version
+    else:
+        setting = AppSetting(key="app_version", value=data.version)
+        db.add(setting)
+    db.commit()
+    db.refresh(setting)
+    return VersionResponse(version=setting.value)

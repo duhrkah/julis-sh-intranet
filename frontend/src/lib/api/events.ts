@@ -128,6 +128,25 @@ export async function deleteEventAttachment(eventId: number, attachmentId: numbe
   await apiClient.delete(`/events/${eventId}/attachments/${attachmentId}`);
 }
 
+export async function renameEventAttachment(eventId: number, attachmentId: number, originalName: string): Promise<EventAttachment> {
+  const response = await apiClient.patch<EventAttachment>(`/events/${eventId}/attachments/${attachmentId}`, { original_name: originalName });
+  return response.data;
+}
+
+export async function downloadEventAttachment(eventId: number, attachmentId: number, filename: string): Promise<void> {
+  const response = await apiClient.get(`/events/${eventId}/attachments/${attachmentId}`, {
+    responseType: 'blob',
+  });
+  const url = window.URL.createObjectURL(response.data as Blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+}
+
 export function getEventAttachmentUrl(eventId: number, attachmentId: number): string {
   return `${apiClient.defaults.baseURL}/events/${eventId}/attachments/${attachmentId}`;
 }

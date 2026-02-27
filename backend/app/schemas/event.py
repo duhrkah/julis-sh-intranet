@@ -55,6 +55,10 @@ class EventUpdate(BaseModel):
     is_public: Optional[bool] = None
 
 
+class EventAttachmentRename(BaseModel):
+    original_name: str = Field(..., min_length=1, max_length=255)
+
+
 class EventAttachmentResponse(BaseModel):
     id: int
     event_id: int

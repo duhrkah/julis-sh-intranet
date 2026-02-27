@@ -1,10 +1,21 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { getAppVersion, updateAppVersion } from '@/lib/api/settings';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import {
   Calendar,
   Users,
@@ -35,6 +46,39 @@ type SidebarProps = { mobileOpen?: boolean; onMobileClose?: () => void };
 export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const { hasMinRole, canAccessMemberChanges } = useAuth();
+  const [appVersion, setAppVersion] = useState<string | null>(null);
+  const [showVersionDialog, setShowVersionDialog] = useState(false);
+  const [bumpType, setBumpType] = useState<'patch' | 'minor' | 'major'>('patch');
+  const [customVersion, setCustomVersion] = useState('');
+  const [versionSaving, setVersionSaving] = useState(false);
+
+  useEffect(() => {
+    getAppVersion().then(setAppVersion).catch(() => {});
+  }, []);
+
+  const bumpVersion = (current: string, type: 'patch' | 'minor' | 'major'): string => {
+    const parts = current.split('.').map(Number);
+    if (parts.length !== 3 || parts.some(isNaN)) return current;
+    if (type === 'major') return `${parts[0] + 1}.0.0`;
+    if (type === 'minor') return `${parts[0]}.${parts[1] + 1}.0`;
+    return `${parts[0]}.${parts[1]}.${parts[2] + 1}`;
+  };
+
+  const handleVersionBump = async () => {
+    if (!appVersion) return;
+    setVersionSaving(true);
+    const newVersion = customVersion.trim() || bumpVersion(appVersion, bumpType);
+    try {
+      const updated = await updateAppVersion(newVersion);
+      setAppVersion(updated);
+      setShowVersionDialog(false);
+      setCustomVersion('');
+    } catch {
+      // Fehler still ignorieren
+    } finally {
+      setVersionSaving(false);
+    }
+  };
 
   const navContent = (
     <>
@@ -88,6 +132,25 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             );
           })}
       </nav>
+      {appVersion && (
+        <div className="shrink-0 border-t border-sidebar-border px-4 py-3">
+          {hasMinRole('admin') ? (
+            <button
+              type="button"
+              onClick={() => {
+                setCustomVersion('');
+                setBumpType('patch');
+                setShowVersionDialog(true);
+              }}
+              className="text-xs text-sidebar-foreground/50 transition-colors hover:text-sidebar-foreground"
+            >
+              v{appVersion}
+            </button>
+          ) : (
+            <span className="text-xs text-sidebar-foreground/50">v{appVersion}</span>
+          )}
+        </div>
+      )}
     </>
   );
 
@@ -112,6 +175,54 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
       >
         {navContent}
       </aside>
+
+      <Dialog open={showVersionDialog} onOpenChange={setShowVersionDialog}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Version erhöhen</DialogTitle>
+            <DialogDescription>
+              Aktuelle Version: <strong>{appVersion}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              {(['patch', 'minor', 'major'] as const).map((type) => (
+                <Button
+                  key={type}
+                  size="sm"
+                  variant={bumpType === type && !customVersion ? 'default' : 'outline'}
+                  onClick={() => { setBumpType(type); setCustomVersion(''); }}
+                  className="flex-1"
+                >
+                  <span className="flex flex-col items-center">
+                    <span className="text-xs capitalize">{type}</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {appVersion ? bumpVersion(appVersion, type) : ''}
+                    </span>
+                  </span>
+                </Button>
+              ))}
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Oder manuell eingeben:</label>
+              <Input
+                value={customVersion}
+                onChange={(e) => setCustomVersion(e.target.value)}
+                placeholder="z.B. 2.0.0-beta"
+                className="h-8 text-sm"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button size="sm" variant="outline" onClick={() => setShowVersionDialog(false)}>
+                Abbrechen
+              </Button>
+              <Button size="sm" onClick={handleVersionBump} disabled={versionSaving}>
+                {versionSaving ? 'Speichern …' : `Auf ${customVersion.trim() || (appVersion ? bumpVersion(appVersion, bumpType) : '')} setzen`}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
