@@ -10,8 +10,11 @@ import {
   deleteEvent,
   approveEvent,
   rejectEvent,
+  uploadEventAttachment,
+  deleteEventAttachment,
   getEventAttachmentUrl,
   type Event,
+  type EventAttachment,
   type EventUpdateInput,
 } from '@/lib/api/events';
 import { getApiErrorMessage } from '@/lib/apiError';
@@ -19,7 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Calendar, MapPin, Paperclip } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Paperclip, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -60,6 +63,8 @@ export default function KalenderEventPage() {
   const [editLocationUrl, setEditLocationUrl] = useState('');
   const [editOrganizer, setEditOrganizer] = useState('');
   const [editIsPublic, setEditIsPublic] = useState(true);
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [deletedAttachmentIds, setDeletedAttachmentIds] = useState<number[]>([]);
 
   useEffect(() => {
     if (!hasMinRole('mitarbeiter') || !id) return;
@@ -103,7 +108,16 @@ export default function KalenderEventPage() {
     };
     try {
       const updated = await updateEvent(event.id, data);
-      setEvent(updated);
+      for (const attId of deletedAttachmentIds) {
+        await deleteEventAttachment(event.id, attId);
+      }
+      for (const file of newFiles) {
+        await uploadEventAttachment(event.id, file);
+      }
+      const refreshed = await getEventById(event.id);
+      setEvent(refreshed);
+      setNewFiles([]);
+      setDeletedAttachmentIds([]);
       setEditing(false);
     } catch (e: unknown) {
       setError(getApiErrorMessage(e, 'Fehler beim Speichern'));
@@ -313,9 +327,62 @@ export default function KalenderEventPage() {
               />
               <label htmlFor="edit_is_public" className="text-sm">Öffentlich</label>
             </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Anhänge</label>
+              {event.attachments && event.attachments.length > 0 && (
+                <ul className="mb-2 space-y-1">
+                  {event.attachments
+                    .filter((att) => !deletedAttachmentIds.includes(att.id))
+                    .map((att) => (
+                      <li key={att.id} className="flex items-center gap-2 text-sm">
+                        <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        <span>{att.original_name}</span>
+                        <span className="text-muted-foreground">({(att.file_size / 1024).toFixed(0)} KB)</span>
+                        <button
+                          type="button"
+                          onClick={() => setDeletedAttachmentIds((prev) => [...prev, att.id])}
+                          className="ml-1 rounded p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                          title="Anhang entfernen"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                </ul>
+              )}
+              {deletedAttachmentIds.length > 0 && (
+                <p className="mb-2 text-xs text-muted-foreground">
+                  {deletedAttachmentIds.length} Anhang/Anhänge werden beim Speichern entfernt.{' '}
+                  <button
+                    type="button"
+                    onClick={() => setDeletedAttachmentIds([])}
+                    className="text-primary hover:underline"
+                  >
+                    Rückgängig
+                  </button>
+                </p>
+              )}
+              <input
+                type="file"
+                multiple
+                accept=".pdf,.docx,.doc,.png,.jpg,.jpeg"
+                onChange={(e) => setNewFiles(Array.from(e.target.files || []))}
+                className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary-foreground hover:file:bg-primary/90"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Erlaubt: PDF, DOCX, DOC, PNG, JPG. Max. 20 MB pro Datei.
+              </p>
+              {newFiles.length > 0 && (
+                <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+                  {newFiles.map((f, i) => (
+                    <li key={i}>{f.name} ({(f.size / 1024).toFixed(0)} KB)</li>
+                  ))}
+                </ul>
+              )}
+            </div>
             <div className="flex gap-2">
               <Button onClick={handleSave} disabled={saving}>{saving ? 'Speichern …' : 'Speichern'}</Button>
-              <Button variant="outline" onClick={() => setEditing(false)}>Abbrechen</Button>
+              <Button variant="outline" onClick={() => { setEditing(false); setNewFiles([]); setDeletedAttachmentIds([]); }}>Abbrechen</Button>
             </div>
           </CardContent>
         </Card>
