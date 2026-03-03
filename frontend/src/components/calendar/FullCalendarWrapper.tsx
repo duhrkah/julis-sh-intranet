@@ -74,6 +74,11 @@ export default function FullCalendarWrapper({
   const [hoveredEvent, setHoveredEvent] = useState<CalendarEventInput | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isTouchDevice = useRef(false);
+
+  useEffect(() => {
+    isTouchDevice.current = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  }, []);
 
   useEffect(() => {
     const transformed = events.map((event) => {
@@ -116,6 +121,7 @@ export default function FullCalendarWrapper({
 
   const handleEventMouseEnter = useCallback(
     (info: { event: { extendedProps: Record<string, unknown> }; jsEvent: MouseEvent }) => {
+      if (isTouchDevice.current) return;
       if (hideTimeoutRef.current) {
         clearTimeout(hideTimeoutRef.current);
         hideTimeoutRef.current = null;
