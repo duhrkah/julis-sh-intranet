@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
 import {
-  getSupporterMembers,
-  createSupporterMember,
+  getSupporterMemberById,
   updateSupporterMember,
   deleteSupporterMember,
   STUFEN,
@@ -26,26 +27,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import Link from 'next/link';
-import { Heart, Plus, Pencil, Trash2, Search, X, Eye } from 'lucide-react';
-
-const EMPTY_FORM: SupporterMemberCreate = {
-  geschlecht: 'männlich',
-  titel: '',
-  vorname: '',
-  nachname: '',
-  kreisverband_id: null,
-  beitragshoehe: 25,
-  verwendungszweck: '',
-  iban: '',
-  bankinstitut: '',
-  strasse_hausnummer: '',
-  plz: '',
-  ort: '',
-  telefon: '',
-  mobilnummer: '',
-  email: '',
-};
+import {
+  ArrowLeft,
+  Heart,
+  Pencil,
+  Trash2,
+  User,
+  CreditCard,
+  MapPin,
+  Building2,
+} from 'lucide-react';
 
 function berechneStufe(betrag: number): string {
   if (betrag >= 450) return 'Zukunftsgestalter';
@@ -63,84 +54,66 @@ function stufeBadgeVariant(stufe: string): 'default' | 'secondary' | 'outline' {
   }
 }
 
-export default function FoerdermitgliederPage() {
+function DetailRow({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:gap-4">
+      <dt className="text-sm font-medium text-muted-foreground sm:w-44 sm:shrink-0">{label}</dt>
+      <dd className="text-sm">{value || '–'}</dd>
+    </div>
+  );
+}
+
+export default function FoerdermitgliedDetailPage() {
   const { hasMinRole } = useAuth();
-  const [members, setMembers] = useState<SupporterMember[]>([]);
+  const params = useParams();
+  const router = useRouter();
+  const memberId = Number(params.id);
+
+  const [member, setMember] = useState<SupporterMember | null>(null);
   const [kvList, setKvList] = useState<Kreisverband[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterKv, setFilterKv] = useState<number | ''>('');
-  const [filterStufe, setFilterStufe] = useState('');
-
-  // Form dialog
+  // Edit dialog
   const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [form, setForm] = useState<SupporterMemberCreate>({ ...EMPTY_FORM });
+  const [form, setForm] = useState<SupporterMemberCreate>({
+    geschlecht: '', vorname: '', nachname: '', beitragshoehe: 25,
+  });
   const [submitting, setSubmitting] = useState(false);
 
   // Delete dialog
-  const [deleteTarget, setDeleteTarget] = useState<SupporterMember | null>(null);
+  const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const refresh = useCallback(async () => {
-    try {
-      const data = await getSupporterMembers({
-        kreisverband_id: filterKv || undefined,
-        stufe: filterStufe || undefined,
-        search: searchTerm || undefined,
-      });
-      setMembers(data);
-    } catch (err) {
-      setError(getApiErrorMessage(err, 'Fehler beim Laden der Fördermitglieder'));
-    }
-  }, [filterKv, filterStufe, searchTerm]);
-
   useEffect(() => {
-    if (!hasMinRole('leitung')) return;
-    Promise.all([
-      getSupporterMembers(),
-      getKvList(),
-    ])
+    if (!hasMinRole('leitung') || isNaN(memberId)) return;
+    Promise.all([getSupporterMemberById(memberId), getKvList()])
       .then(([m, kv]) => {
-        setMembers(m);
+        setMember(m);
         setKvList(kv);
       })
-      .catch((err) => setError(getApiErrorMessage(err)))
+      .catch((err) => setError(getApiErrorMessage(err, 'Fördermitglied nicht gefunden')))
       .finally(() => setLoading(false));
-  }, [hasMinRole]);
+  }, [hasMinRole, memberId]);
 
-  useEffect(() => {
-    if (!loading) refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterKv, filterStufe, searchTerm]);
-
-  const openCreate = () => {
-    setEditingId(null);
-    setForm({ ...EMPTY_FORM });
-    setShowForm(true);
-  };
-
-  const openEdit = (m: SupporterMember) => {
-    setEditingId(m.id);
+  const openEdit = () => {
+    if (!member) return;
     setForm({
-      geschlecht: m.geschlecht,
-      titel: m.titel ?? '',
-      vorname: m.vorname,
-      nachname: m.nachname,
-      kreisverband_id: m.kreisverband_id ?? null,
-      beitragshoehe: m.beitragshoehe,
-      verwendungszweck: m.verwendungszweck ?? '',
-      iban: m.iban ?? '',
-      bankinstitut: m.bankinstitut ?? '',
-      strasse_hausnummer: m.strasse_hausnummer ?? '',
-      plz: m.plz ?? '',
-      ort: m.ort ?? '',
-      telefon: m.telefon ?? '',
-      mobilnummer: m.mobilnummer ?? '',
-      email: m.email ?? '',
+      geschlecht: member.geschlecht,
+      titel: member.titel ?? '',
+      vorname: member.vorname,
+      nachname: member.nachname,
+      kreisverband_id: member.kreisverband_id ?? null,
+      beitragshoehe: member.beitragshoehe,
+      verwendungszweck: member.verwendungszweck ?? '',
+      iban: member.iban ?? '',
+      bankinstitut: member.bankinstitut ?? '',
+      strasse_hausnummer: member.strasse_hausnummer ?? '',
+      plz: member.plz ?? '',
+      ort: member.ort ?? '',
+      telefon: member.telefon ?? '',
+      mobilnummer: member.mobilnummer ?? '',
+      email: member.email ?? '',
     });
     setShowForm(true);
   };
@@ -164,13 +137,9 @@ export default function FoerdermitgliederPage() {
         mobilnummer: form.mobilnummer || null,
         email: form.email || null,
       };
-      if (editingId) {
-        await updateSupporterMember(editingId, payload);
-      } else {
-        await createSupporterMember(payload);
-      }
+      const updated = await updateSupporterMember(memberId, payload);
+      setMember(updated);
       setShowForm(false);
-      refresh();
     } catch (err) {
       setError(getApiErrorMessage(err, 'Fehler beim Speichern'));
     } finally {
@@ -179,15 +148,12 @@ export default function FoerdermitgliederPage() {
   };
 
   const handleDelete = async () => {
-    if (!deleteTarget) return;
     setDeleting(true);
     try {
-      await deleteSupporterMember(deleteTarget.id);
-      setDeleteTarget(null);
-      refresh();
+      await deleteSupporterMember(memberId);
+      router.push('/foerdermitglieder');
     } catch (err) {
       setError(getApiErrorMessage(err, 'Fehler beim Löschen'));
-    } finally {
       setDeleting(false);
     }
   };
@@ -198,141 +164,146 @@ export default function FoerdermitgliederPage() {
 
   if (!hasMinRole('leitung')) return null;
 
+  if (loading) {
+    return (
+      <div className="p-4 sm:p-6">
+        <p className="text-muted-foreground">Lade …</p>
+      </div>
+    );
+  }
+
+  if (error && !member) {
+    return (
+      <div className="p-4 sm:p-6">
+        <p className="text-destructive">{error}</p>
+        <Button variant="outline" className="mt-4" asChild>
+          <Link href="/foerdermitglieder">Zurück zur Übersicht</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  if (!member) return null;
+
   return (
     <div className="p-4 sm:p-6">
+      {/* Back */}
+      <Button variant="ghost" size="sm" className="mb-4" asChild>
+        <Link href="/foerdermitglieder" className="flex items-center gap-1">
+          <ArrowLeft className="h-4 w-4" /> Zurück zur Übersicht
+        </Link>
+      </Button>
+
+      {/* Header */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Heart className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-semibold">Fördermitglieder</h1>
+          <div>
+            <h1 className="text-2xl font-semibold">
+              {member.titel ? `${member.titel} ` : ''}{member.vorname} {member.nachname}
+            </h1>
+            <p className="text-sm text-muted-foreground">Lfd. Nr. {member.id}</p>
+          </div>
+          <Badge variant={stufeBadgeVariant(member.stufe)}>{member.stufe}</Badge>
         </div>
-        <Button onClick={openCreate}>
-          <Plus className="mr-1 h-4 w-4" />
-          Neues Fördermitglied
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={openEdit}>
+            <Pencil className="mr-1 h-4 w-4" /> Bearbeiten
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setShowDelete(true)} className="text-destructive hover:text-destructive">
+            <Trash2 className="mr-1 h-4 w-4" /> Löschen
+          </Button>
+        </div>
       </div>
 
       {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
 
-      {/* Filters */}
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Name oder E-Mail suchen…"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
-          />
-          {searchTerm && (
-            <button
-              type="button"
-              onClick={() => setSearchTerm('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-        <select
-          className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-          value={filterKv}
-          onChange={(e) => setFilterKv(e.target.value ? Number(e.target.value) : '')}
-        >
-          <option value="">Alle Kreisverbände</option>
-          {kvList.map((kv) => (
-            <option key={kv.id} value={kv.id}>{kv.name}</option>
-          ))}
-        </select>
-        <select
-          className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-          value={filterStufe}
-          onChange={(e) => setFilterStufe(e.target.value)}
-        >
-          <option value="">Alle Stufen</option>
-          {STUFEN.map((s) => (
-            <option key={s.value} value={s.value}>{s.label} (ab {s.min} €)</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Table */}
-      {loading ? (
-        <p className="text-muted-foreground">Lade …</p>
-      ) : members.length === 0 ? (
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Persönliche Daten */}
         <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            Keine Fördermitglieder gefunden.
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <User className="h-4 w-4" /> Persönliche Daten
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <dl className="space-y-3">
+              <DetailRow label="Geschlecht" value={member.geschlecht} />
+              <DetailRow label="Titel" value={member.titel} />
+              <DetailRow label="Vorname" value={member.vorname} />
+              <DetailRow label="Nachname" value={member.nachname} />
+              <DetailRow
+                label="E-Mail"
+                value={member.email}
+              />
+              <DetailRow label="Telefon" value={member.telefon} />
+              <DetailRow label="Mobilnummer" value={member.mobilnummer} />
+            </dl>
           </CardContent>
         </Card>
-      ) : (
-        <div className="overflow-x-auto rounded-lg border border-border">
-          <table className="w-full text-sm">
-            <thead className="border-b bg-muted/50">
-              <tr>
-                <th className="px-3 py-2 text-left font-medium">Nr.</th>
-                <th className="px-3 py-2 text-left font-medium">Name</th>
-                <th className="px-3 py-2 text-left font-medium">Kreisverband</th>
-                <th className="px-3 py-2 text-left font-medium">Stufe</th>
-                <th className="px-3 py-2 text-right font-medium">Beitrag</th>
-                <th className="px-3 py-2 text-left font-medium">E-Mail</th>
-                <th className="px-3 py-2 text-right font-medium">Aktionen</th>
-              </tr>
-            </thead>
-            <tbody>
-              {members.map((m) => (
-                <tr key={m.id} className="border-b last:border-0 hover:bg-muted/30">
-                  <td className="px-3 py-2 text-muted-foreground">{m.id}</td>
-                  <td className="px-3 py-2">
-                    <Link href={`/foerdermitglieder/${m.id}`} className="text-primary hover:underline">
-                      {m.titel ? `${m.titel} ` : ''}{m.vorname} {m.nachname}
-                    </Link>
-                  </td>
-                  <td className="px-3 py-2 text-muted-foreground">{m.kreisverband_name ?? '–'}</td>
-                  <td className="px-3 py-2">
-                    <Badge variant={stufeBadgeVariant(m.stufe)}>{m.stufe}</Badge>
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums">
-                    {Number(m.beitragshoehe).toLocaleString('de-DE', { minimumFractionDigits: 2 })} €
-                  </td>
-                  <td className="px-3 py-2">
-                    {m.email ? (
-                      <a href={`mailto:${m.email}`} className="text-primary hover:underline">{m.email}</a>
-                    ) : '–'}
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="sm" asChild title="Details">
-                        <Link href={`/foerdermitglieder/${m.id}`}>
-                          <Eye className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => openEdit(m)} title="Bearbeiten">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(m)} title="Löschen" className="text-destructive hover:text-destructive">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
 
-      <p className="mt-3 text-xs text-muted-foreground">
-        {members.length} Fördermitglied{members.length !== 1 ? 'er' : ''} angezeigt
-      </p>
+        {/* Beitrag & Bankdaten */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <CreditCard className="h-4 w-4" /> Beitrag &amp; Bankdaten
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <dl className="space-y-3">
+              <DetailRow
+                label="Beitragshöhe"
+                value={`${Number(member.beitragshoehe).toLocaleString('de-DE', { minimumFractionDigits: 2 })} €/Jahr`}
+              />
+              <div className="flex flex-col sm:flex-row sm:gap-4">
+                <dt className="text-sm font-medium text-muted-foreground sm:w-44 sm:shrink-0">Stufe</dt>
+                <dd><Badge variant={stufeBadgeVariant(member.stufe)}>{member.stufe}</Badge></dd>
+              </div>
+              <DetailRow label="Verwendungszweck" value={member.verwendungszweck} />
+              <DetailRow label="IBAN" value={member.iban} />
+              <DetailRow label="Bankinstitut" value={member.bankinstitut} />
+            </dl>
+          </CardContent>
+        </Card>
 
-      {/* Create/Edit Dialog */}
+        {/* Adresse */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <MapPin className="h-4 w-4" /> Adresse
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <dl className="space-y-3">
+              <DetailRow label="Straße + Hausnr." value={member.strasse_hausnummer} />
+              <DetailRow label="PLZ" value={member.plz} />
+              <DetailRow label="Ort" value={member.ort} />
+            </dl>
+          </CardContent>
+        </Card>
+
+        {/* Kreisverband */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Building2 className="h-4 w-4" /> Kreisverband
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <dl className="space-y-3">
+              <DetailRow label="Kreisverband" value={member.kreisverband_name} />
+            </dl>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Edit Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editingId ? 'Fördermitglied bearbeiten' : 'Neues Fördermitglied'}</DialogTitle>
+            <DialogTitle>Fördermitglied bearbeiten</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Personal */}
             <div className="grid gap-3 sm:grid-cols-3">
               <div>
                 <label className="mb-1 block text-sm font-medium">Geschlecht *</label>
@@ -379,7 +350,6 @@ export default function FoerdermitgliederPage() {
               </select>
             </div>
 
-            {/* Beitrag */}
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-sm font-medium">Beitragshöhe (€/Jahr) *</label>
@@ -407,7 +377,6 @@ export default function FoerdermitgliederPage() {
               <Input value={form.verwendungszweck ?? ''} onChange={(e) => updateField('verwendungszweck', e.target.value)} />
             </div>
 
-            {/* Bank */}
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-sm font-medium">IBAN</label>
@@ -419,7 +388,6 @@ export default function FoerdermitgliederPage() {
               </div>
             </div>
 
-            {/* Address */}
             <div>
               <label className="mb-1 block text-sm font-medium">Straße + Hausnummer</label>
               <Input value={form.strasse_hausnummer ?? ''} onChange={(e) => updateField('strasse_hausnummer', e.target.value)} />
@@ -435,7 +403,6 @@ export default function FoerdermitgliederPage() {
               </div>
             </div>
 
-            {/* Contact */}
             <div className="grid gap-3 sm:grid-cols-3">
               <div>
                 <label className="mb-1 block text-sm font-medium">Telefon</label>
@@ -454,7 +421,7 @@ export default function FoerdermitgliederPage() {
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Abbrechen</Button>
               <Button type="submit" disabled={submitting}>
-                {submitting ? 'Speichere …' : editingId ? 'Speichern' : 'Anlegen'}
+                {submitting ? 'Speichere …' : 'Speichern'}
               </Button>
             </div>
           </form>
@@ -463,10 +430,10 @@ export default function FoerdermitgliederPage() {
 
       {/* Delete Confirmation */}
       <ConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
+        open={showDelete}
+        onOpenChange={setShowDelete}
         title="Fördermitglied löschen"
-        description={deleteTarget ? `Soll „${deleteTarget.vorname} ${deleteTarget.nachname}" wirklich gelöscht werden?` : ''}
+        description={`Soll „${member.vorname} ${member.nachname}" wirklich gelöscht werden?`}
         confirmLabel="Löschen"
         variant="destructive"
         onConfirm={handleDelete}
