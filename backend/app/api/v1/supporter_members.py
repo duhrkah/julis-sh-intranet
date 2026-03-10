@@ -56,7 +56,7 @@ async def list_supporter_members(
             | (SupporterMember.email.ilike(term))
         )
 
-    members = query.order_by(SupporterMember.nachname, SupporterMember.vorname).offset(skip).limit(limit).all()
+    members = query.order_by(SupporterMember.id.asc()).offset(skip).limit(limit).all()
     return [_to_response(m, db) for m in members]
 
 
