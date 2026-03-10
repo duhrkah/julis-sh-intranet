@@ -13,11 +13,12 @@ from app.models.document_aenderung import DocumentAenderung
 from app.models.meeting import Meeting
 from app.models.event_attachment import EventAttachment
 from app.models.app_setting import AppSetting
+from app.models.supporter_member import SupporterMember
 
 __all__ = [
     "User", "Tenant", "Event", "Category", "AuditLog",
     "Kreisverband", "KVVorstandsmitglied", "KVProtokoll",
     "MemberChange", "EmailTemplate", "EmailRecipient",
     "Document", "DocumentAmendment", "DocumentAenderung", "Meeting",
-    "EventAttachment", "AppSetting",
+    "EventAttachment", "AppSetting", "SupporterMember",
 ]

@@ -25,6 +25,7 @@ import {
   LayoutDashboard,
   ClipboardList,
   ClipboardCheck,
+  Heart,
 } from 'lucide-react';
 
 const navItems: { href: string; label: string; icon: React.ComponentType<{ className?: string }>; minRole: 'mitarbeiter' | 'vorstand' | 'leitung' | 'admin' }[] = [
@@ -33,6 +34,7 @@ const navItems: { href: string; label: string; icon: React.ComponentType<{ class
   { href: '/kalender/admin/freigabe', label: 'Terminfreigabe', icon: ClipboardCheck, minRole: 'vorstand' },
   { href: '/mitglieder', label: 'Mitgliederänderungen', icon: Users, minRole: 'mitarbeiter' },
   { href: '/kreisverband', label: 'Kreisverbände', icon: Building2, minRole: 'mitarbeiter' },
+  { href: '/foerdermitglieder', label: 'Fördermitglieder', icon: Heart, minRole: 'leitung' },
   { href: '/dokumente/satzung', label: 'Dokumente', icon: FileText, minRole: 'vorstand' },
   { href: '/dokumente/sitzungen', label: 'Sitzungen', icon: ClipboardList, minRole: 'mitarbeiter' },
 ];

@@ -3,6 +3,7 @@ from fastapi import APIRouter
 
 from app.api.v1 import auth, users, events, admin, categories, tenants, public
 from app.api.v1 import kreisverband, member_changes, email_templates, email_recipients, documents, meetings, audit, settings as settings_router
+from app.api.v1 import supporter_members
 
 api_router = APIRouter()
 
@@ -33,6 +34,9 @@ api_router.include_router(meetings.router, prefix="/meetings", tags=["meetings"]
 
 # Audit-Log
 api_router.include_router(audit.router, prefix="/audit", tags=["audit"])
+
+# Fördermitglieder
+api_router.include_router(supporter_members.router, prefix="/supporter-members", tags=["supporter-members"])
 
 # Einstellungen (SMTP-Test etc.) – Admin
 api_router.include_router(settings_router.router, prefix="/settings", tags=["settings"])
