@@ -251,6 +251,8 @@ TEILNEHMER_NAMEN_LANDESVORSTAND = [
     "Tristan Schlabritz",
     "Elena Marggraff",
     "Jan-Niklas Kaufmann",
+    #Entfernen nach letztem Protokoll
+    "Ann-Malin Madsen",
     # Landesgeschäftsstelle, Ombudsperson, LSSH, Bundesvorsitz (sonstige Anwesende)
     "Luca Stephan Kohls (Landesgeschäftsführer)",
     "Felix Leon Holz (Referent für Organisation & IT)",
