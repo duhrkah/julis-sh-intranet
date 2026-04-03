@@ -244,7 +244,9 @@ TEILNEHMER_NAMEN_LANDESVORSTAND = [
     "Laurids Heidemann",
     "Tom Schröder",
     "Julian Antonius Geist",
-    "Ann-Malin Madsen",
+    "Jakob Sontag"
+    "Emily Petersen",
+    "Jette Flebbe",
     "Kevin Naumann",
     "Tristan Schlabritz",
     "Elena Marggraff",
