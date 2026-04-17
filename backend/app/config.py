@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     MS_CLIENT_SECRET: Optional[str] = None
     MS_SENDER_MAIL: Optional[str] = None
 
+    # Interner Sammel-Kalender (Microsoft 365 Room Resource), in den alle
+    # genehmigten Termine aus dem Intranet gespiegelt werden. UPN/E-Mail der
+    # Ziel-Mailbox. Leer = Spiegelung deaktiviert.
+    GRAPH_CALENDAR_MAILBOX: Optional[str] = None
+
     # Microsoft 365 / Entra ID Login (OAuth2)
     # Redirect URI in Azure muss exakt der Frontend-Callback sein, z. B. https://intranet.example.com/login/microsoft/callback
     MS_OAUTH_REDIRECT_URI: Optional[str] = None  # z. B. aus APP_URL + /login/microsoft/callback
@@ -112,6 +117,16 @@ class Settings(BaseSettings):
             and bool(self.MS_CLIENT_ID)
             and bool(self.MS_CLIENT_SECRET)
             and bool(self.MS_SENDER_MAIL)
+        )
+
+    @property
+    def graph_calendar_configured(self) -> bool:
+        """Ob die Spiegelung in den internen Outlook-Kalender aktiv ist."""
+        return (
+            bool(self.MS_TENANT_ID)
+            and bool(self.MS_CLIENT_ID)
+            and bool(self.MS_CLIENT_SECRET)
+            and bool(self.GRAPH_CALENDAR_MAILBOX)
         )
 
     @property

@@ -9,8 +9,10 @@ from app.api.deps import get_db, get_tenant_filter
 from app.core.rbac import require_role
 from app.models.event import Event
 from app.models.user import User
+from app.config import settings
 from app.schemas.event import EventResponse
 from app.services.audit import log_action
+from app.services.graph_calendar import sync_event_to_graph
 
 router = APIRouter()
 
@@ -68,6 +70,7 @@ async def approve_event(
     log_action(db, current_user.id, "approve", "event", event.id, f"Event freigegeben: {event.title}", request)
     db.commit()
     db.refresh(event)
+    await sync_event_to_graph(db, event)
     return event
 
 
@@ -99,4 +102,85 @@ async def reject_event(
     log_action(db, current_user.id, "reject", "event", event.id, f"Event abgelehnt: {event.title}", request)
     db.commit()
     db.refresh(event)
+    await sync_event_to_graph(db, event)
     return event
+
+
+class GraphSyncResult(BaseModel):
+    configured: bool
+    processed: int
+    created: int
+    updated: int
+    deleted: int
+    failed: int
+
+
+@router.post("/events/sync-graph-calendar", response_model=GraphSyncResult)
+async def sync_graph_calendar(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("vorstand")),
+):
+    """Alle sichtbaren Events mit dem internen Outlook-Sammelkalender abgleichen.
+
+    Nützlich für den initialen Rollout oder nach Ausfällen der Graph-API.
+    Legt fehlende approved+public-Events im Kalender an, aktualisiert
+    bestehende, und entfernt Einträge für Events, die den Status verloren haben.
+    """
+    if not settings.graph_calendar_configured:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="GRAPH_CALENDAR_MAILBOX und MS-Graph-Zugangsdaten sind nicht konfiguriert.",
+        )
+
+    tenant_ids = get_tenant_filter(db, current_user, include_children=True)
+    if not tenant_ids:
+        return GraphSyncResult(configured=True, processed=0, created=0, updated=0, deleted=0, failed=0)
+
+    events = (
+        db.query(Event)
+        .filter(Event.tenant_id.in_(tenant_ids))
+        .filter((Event.status == "approved") | (Event.graph_event_id.isnot(None)))
+        .all()
+    )
+
+    created = updated = deleted = failed = 0
+    for event in events:
+        before_id = event.graph_event_id
+        should_exist = event.status == "approved" and event.is_public
+        try:
+            await sync_event_to_graph(db, event)
+        except Exception:
+            failed += 1
+            continue
+        after_id = event.graph_event_id
+        if should_exist:
+            if not before_id and after_id:
+                created += 1
+            elif before_id and after_id:
+                updated += 1
+            elif not after_id:
+                failed += 1
+        else:
+            if before_id and not after_id:
+                deleted += 1
+
+    log_action(
+        db,
+        current_user.id,
+        "sync",
+        "graph_calendar",
+        None,
+        f"Graph-Kalender synchronisiert: {created} neu, {updated} aktualisiert, {deleted} entfernt",
+        request,
+    )
+    db.commit()
+
+    return GraphSyncResult(
+        configured=True,
+        processed=len(events),
+        created=created,
+        updated=updated,
+        deleted=deleted,
+        failed=failed,
+    )

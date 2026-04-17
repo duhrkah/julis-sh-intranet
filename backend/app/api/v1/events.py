@@ -23,6 +23,7 @@ from app.models.event_attachment import EventAttachment
 from app.models.user import User
 from app.schemas.event import EventCreate, EventUpdate, EventResponse, EventAttachmentResponse, EventAttachmentRename
 from app.services.audit import log_action
+from app.services.graph_calendar import remove_event_from_graph, sync_event_to_graph
 
 router = APIRouter()
 
@@ -132,6 +133,7 @@ async def create_event(
     log_action(db, current_user.id, "create", "event", db_event.id, f"Event erstellt: {db_event.title}", request)
     db.commit()
     db.refresh(db_event)
+    await sync_event_to_graph(db, db_event)
     return db_event
 
 
@@ -187,6 +189,7 @@ async def update_event(
     log_action(db, current_user.id, "update", "event", event.id, f"Event aktualisiert: {event.title}", request)
     db.commit()
     db.refresh(event)
+    await sync_event_to_graph(db, event)
     return event
 
 
@@ -214,9 +217,11 @@ async def delete_event(
             os.remove(att.file_path)
 
     event_title = event.title
+    graph_event_id = event.graph_event_id
     db.delete(event)
     log_action(db, current_user.id, "delete", "event", event_id, f"Event gelöscht: {event_title}", request)
     db.commit()
+    await remove_event_from_graph(graph_event_id)
     return None
 
 
