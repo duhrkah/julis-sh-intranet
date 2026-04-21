@@ -87,3 +87,58 @@ export async function updateSupporterMember(id: number, data: SupporterMemberUpd
 export async function deleteSupporterMember(id: number): Promise<void> {
   await apiClient.delete(`/supporter-members/${id}`);
 }
+
+export const EXPORT_COLUMNS: { key: string; label: string }[] = [
+  { key: 'id', label: 'ID' },
+  { key: 'anrede', label: 'Anrede' },
+  { key: 'titel', label: 'Titel' },
+  { key: 'vorname', label: 'Vorname' },
+  { key: 'nachname', label: 'Nachname' },
+  { key: 'kreisverband', label: 'Kreisverband' },
+  { key: 'stufe', label: 'Stufe' },
+  { key: 'beitragshoehe', label: 'Beitragshöhe (€)' },
+  { key: 'verwendungszweck', label: 'Verwendungszweck' },
+  { key: 'iban', label: 'IBAN' },
+  { key: 'bankinstitut', label: 'Bankinstitut' },
+  { key: 'strasse_hausnummer', label: 'Straße/Hausnr.' },
+  { key: 'plz', label: 'PLZ' },
+  { key: 'ort', label: 'Ort' },
+  { key: 'telefon', label: 'Telefon' },
+  { key: 'mobilnummer', label: 'Mobil' },
+  { key: 'email', label: 'E-Mail' },
+  { key: 'ist_aktiv', label: 'Aktiv' },
+  { key: 'created_at', label: 'Erstellt am' },
+  { key: 'updated_at', label: 'Aktualisiert am' },
+];
+
+export interface SupporterMemberExportParams {
+  kreisverband_id?: number;
+  stufe?: string;
+  search?: string;
+  include_inactive?: boolean;
+  columns?: string[];
+}
+
+export async function exportSupporterMembersCSV(params: SupporterMemberExportParams): Promise<void> {
+  const { columns, ...filters } = params;
+  const response = await apiClient.get('/supporter-members/export.csv', {
+    params: {
+      ...filters,
+      columns: columns && columns.length > 0 ? columns.join(',') : undefined,
+    },
+    responseType: 'blob',
+  });
+
+  const match = /filename="?([^";]+)"?/i.exec(response.headers['content-disposition'] ?? '');
+  const filename = match?.[1] ?? `foerdermitglieder_${new Date().toISOString().slice(0, 10)}.csv`;
+
+  const blob = response.data as Blob;
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}

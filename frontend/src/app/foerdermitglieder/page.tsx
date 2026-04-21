@@ -7,6 +7,8 @@ import {
   createSupporterMember,
   updateSupporterMember,
   deleteSupporterMember,
+  exportSupporterMembersCSV,
+  EXPORT_COLUMNS,
   STUFEN,
   GESCHLECHTER,
   type SupporterMember,
@@ -27,7 +29,32 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import Link from 'next/link';
-import { Heart, Plus, Pencil, Trash2, Search, X, Eye } from 'lucide-react';
+import { Heart, Plus, Pencil, Trash2, Search, X, Eye, Download } from 'lucide-react';
+
+const EXPORT_COLUMNS_STORAGE_KEY = 'foerdermitglieder_export_columns';
+
+function loadSavedExportColumns(): string[] | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(EXPORT_COLUMNS_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return null;
+    const valid = parsed.filter((k): k is string => typeof k === 'string' && EXPORT_COLUMNS.some((c) => c.key === k));
+    return valid.length > 0 ? valid : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveExportColumns(cols: string[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(EXPORT_COLUMNS_STORAGE_KEY, JSON.stringify(cols));
+  } catch {
+    /* ignore */
+  }
+}
 
 const EMPTY_FORM: SupporterMemberCreate = {
   geschlecht: 'männlich',
@@ -84,6 +111,14 @@ export default function FoerdermitgliederPage() {
   // Delete dialog
   const [deleteTarget, setDeleteTarget] = useState<SupporterMember | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Export dialog
+  const [showExport, setShowExport] = useState(false);
+  const [exportColumns, setExportColumns] = useState<Set<string>>(
+    () => new Set(EXPORT_COLUMNS.map((c) => c.key))
+  );
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -196,6 +231,49 @@ export default function FoerdermitgliederPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const openExport = () => {
+    const saved = loadSavedExportColumns();
+    setExportColumns(new Set(saved ?? EXPORT_COLUMNS.map((c) => c.key)));
+    setExportError(null);
+    setShowExport(true);
+  };
+
+  const toggleExportColumn = (key: string) => {
+    setExportColumns((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  const setAllExportColumns = (all: boolean) => {
+    setExportColumns(all ? new Set(EXPORT_COLUMNS.map((c) => c.key)) : new Set());
+  };
+
+  const handleExport = async () => {
+    if (exportColumns.size === 0) {
+      setExportError('Bitte mindestens eine Spalte auswählen.');
+      return;
+    }
+    setExporting(true);
+    setExportError(null);
+    try {
+      const cols = EXPORT_COLUMNS.map((c) => c.key).filter((k) => exportColumns.has(k));
+      await exportSupporterMembersCSV({
+        kreisverband_id: filterKv || undefined,
+        stufe: filterStufe || undefined,
+        search: searchTerm || undefined,
+        columns: cols,
+      });
+      saveExportColumns(cols);
+      setShowExport(false);
+    } catch (err) {
+      setExportError(getApiErrorMessage(err, 'Export fehlgeschlagen'));
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (!hasMinRole('leitung')) return null;
 
   return (
@@ -205,10 +283,16 @@ export default function FoerdermitgliederPage() {
           <Heart className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-semibold">Fördermitglieder</h1>
         </div>
-        <Button onClick={openCreate}>
-          <Plus className="mr-1 h-4 w-4" />
-          Neues Fördermitglied
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={openExport}>
+            <Download className="mr-1 h-4 w-4" />
+            CSV-Export
+          </Button>
+          <Button onClick={openCreate}>
+            <Plus className="mr-1 h-4 w-4" />
+            Neues Fördermitglied
+          </Button>
+        </div>
       </div>
 
       {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
@@ -458,6 +542,64 @@ export default function FoerdermitgliederPage() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Export Dialog */}
+      <Dialog open={showExport} onOpenChange={setShowExport}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Fördermitglieder als CSV exportieren</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Der Export berücksichtigt die aktuell aktiven Filter. Wähle die Spalten aus, die enthalten sein sollen.
+          </p>
+          <div className="flex items-center gap-2 py-2 text-sm">
+            <button
+              type="button"
+              onClick={() => setAllExportColumns(true)}
+              className="text-primary hover:underline"
+            >
+              Alle auswählen
+            </button>
+            <span className="text-muted-foreground">·</span>
+            <button
+              type="button"
+              onClick={() => setAllExportColumns(false)}
+              className="text-primary hover:underline"
+            >
+              Alle abwählen
+            </button>
+            <span className="ml-auto text-muted-foreground">
+              {exportColumns.size} / {EXPORT_COLUMNS.length} ausgewählt
+            </span>
+          </div>
+          <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+            {EXPORT_COLUMNS.map((col) => (
+              <label
+                key={col.key}
+                className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted/50"
+              >
+                <input
+                  type="checkbox"
+                  checked={exportColumns.has(col.key)}
+                  onChange={() => toggleExportColumn(col.key)}
+                  className="h-4 w-4 rounded border-input"
+                />
+                <span>{col.label}</span>
+              </label>
+            ))}
+          </div>
+          {exportError && <p className="text-sm text-destructive">{exportError}</p>}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={() => setShowExport(false)}>
+              Abbrechen
+            </Button>
+            <Button type="button" onClick={handleExport} disabled={exporting || exportColumns.size === 0}>
+              <Download className="mr-1 h-4 w-4" />
+              {exporting ? 'Exportiere …' : 'Exportieren'}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
